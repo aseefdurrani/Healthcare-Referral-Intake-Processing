@@ -22,6 +22,11 @@ def test_settings_are_constructed_without_a_database() -> None:
     assert settings.cognito_issuer.startswith("https://cognito-idp.us-east-2.amazonaws.com/")
 
 
+def test_settings_do_not_read_an_admin_password() -> None:
+    assert "db_admin_password" not in Settings.model_fields
+    assert "db_app_password" not in Settings.model_fields
+
+
 def test_remote_host_without_verify_full_exits(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "test")
     monkeypatch.setenv("DB_HOST", "example.rds.amazonaws.com")

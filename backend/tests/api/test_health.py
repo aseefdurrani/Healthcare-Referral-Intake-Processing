@@ -36,6 +36,7 @@ def test_health_does_not_open_aws_or_postgres(
     assert not hasattr(app.state, "engine")
     with TestClient(app) as client:
         assert client.get("/healthz").json() == {"status": "ok"}
+        assert not hasattr(client.app.state, "engine")
 
 
 def test_valid_request_id_is_echoed(api_client: TestClient) -> None:
@@ -68,7 +69,16 @@ def test_docs_are_disabled_outside_local(api_client: TestClient) -> None:
     assert_problem(api_client.get("/openapi.json"), 404, "NOT_FOUND")
 
 
-def test_docs_are_public_when_local(jwk_client: JwkClient) -> None:
+def test_docs_are_public_when_local(
+    monkeypatch: object,
+    jwk_client: JwkClient,
+) -> None:
+    class _QuietEngine:
+        def dispose(self) -> None:
+            return None
+
+    patch = monkeypatch.setattr
+    patch("app.main.open_database", lambda _settings: _QuietEngine())
     app = create_app(build_settings(app_env="local"), jwk_client=jwk_client)
     with TestClient(app) as client:
         assert client.get("/docs").status_code == 200

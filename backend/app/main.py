@@ -1,4 +1,4 @@
-"""Composition root for settings, auth, and health. No AWS or database clients."""
+"""Composition root for settings, auth, health, and the local database pool."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.engine import Engine
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.health import router as health_router
@@ -24,6 +25,7 @@ from app.core.errors import (
 )
 from app.core.logging import configure_logging, log_event
 from app.core.middleware import RequestContextMiddleware
+from app.db.session import build_session_factory, open_database
 
 UVICORN_HOST = "127.0.0.1"
 UVICORN_PORT = 8000
@@ -40,11 +42,20 @@ def create_app(
     docs_enabled = resolved.app_env == AppEnv.LOCAL
 
     @asynccontextmanager
-    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(running: FastAPI) -> AsyncIterator[None]:
         configure_logging(resolved)
         if resolved.allowed_staff_sub == "":
             log_event(logging.WARNING, "auth.forbidden", reason="allow_list_empty")
-        yield
+        engine: Engine | None = None
+        if resolved.app_env != AppEnv.TEST:
+            engine = open_database(resolved)
+            running.state.engine = engine
+            running.state.session_factory = build_session_factory(engine)
+        try:
+            yield
+        finally:
+            if engine is not None:
+                engine.dispose()
 
     app = FastAPI(
         title="Cortrucent Intake API",

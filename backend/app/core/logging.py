@@ -231,6 +231,7 @@ _EVENTS: dict[str, dict[str, str]] = {
         "stack": "stack",
     },
     "library.log": {"logger": "logger"},
+    "db.connected": {"ssl": "bool"},
 }
 
 _CONTEXT = (
@@ -442,7 +443,18 @@ def configure_logging(settings: Settings) -> None:
     app_logger = logging.getLogger("cortrucent")
     app_logger.setLevel(level)
     app_logger.propagate = True
-    for name in ("botocore", "boto3", "urllib3", "httpx", "httpcore", "s3transfer"):
+    for name in (
+        "botocore",
+        "boto3",
+        "urllib3",
+        "httpx",
+        "httpcore",
+        "s3transfer",
+        "sqlalchemy",
+        "sqlalchemy.engine",
+        "sqlalchemy.pool",
+        "psycopg",
+    ):
         logging.getLogger(name).setLevel(logging.WARNING)
     access = logging.getLogger("uvicorn.access")
     access.disabled = True
