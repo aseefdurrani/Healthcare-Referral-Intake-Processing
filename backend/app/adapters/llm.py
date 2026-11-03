@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +18,7 @@ from botocore.exceptions import (  # type: ignore[import-untyped]
 from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.core.logging import log_event
 from app.schemas.ai import ReferralExtractionV1
 from app.services.grounding import ground
 from app.services.ocr_document import line_map
@@ -26,8 +29,6 @@ SCHEMA_NAME = "referral_extraction_v1"
 SCHEMA_DESCRIPTION = (
     "Structured referral facts with evidence and a non-binding specialty suggestion"
 )
-MAX_INPUT_CHARS = 120_000
-RETRY_MAX_TOKENS = 12_000
 _ROOT = Path(__file__).resolve().parents[1]
 PROMPT_PATH = _ROOT / "ai" / "prompts" / "referral_extract_v1.txt"
 SCHEMA_PATH = _ROOT / "ai" / "schema" / "referral_extraction_v1.json"
@@ -72,6 +73,14 @@ def user_message(document_ref: str, page_count: int, transcript: str) -> str:
     return f"document_ref: {document_ref}\npage_count: {page_count}\n{transcript}"
 
 
+def bedrock_token_cost(settings: Settings, input_tokens: int, output_tokens: int) -> Decimal:
+    """Sonnet or Haiku token charge. Textract pages are added by the pipeline."""
+
+    cost = (Decimal(input_tokens) / Decimal(1000)) * settings.bedrock_input_usd_per_1k_tokens
+    cost += (Decimal(output_tokens) / Decimal(1000)) * settings.bedrock_output_usd_per_1k_tokens
+    return cost.quantize(Decimal("0.000001"))
+
+
 @dataclass
 class AiRunResult:
     status: str
@@ -81,6 +90,7 @@ class AiRunResult:
     latency_ms: int | None = None
     input_tokens: int | None = None
     output_tokens: int | None = None
+    estimated_cost_usd: Decimal | None = None
     output: dict[str, Any] | None = None
     warnings: list[dict[str, str]] = field(default_factory=list)
     raw_output_text: str | None = None
@@ -101,6 +111,7 @@ class _Call:
     aws_request_id: str | None
     error_code: str | None = None
     retryable: bool = False
+    application_retry: bool = False
 
 
 def _request_id(response: dict[str, Any]) -> str | None:
@@ -131,24 +142,31 @@ class BotoLanguageModel:
             return AiRunResult(
                 status="skipped", error_code="ai_disabled", model_id=self._settings.bedrock_model_id
             )
-        if len(transcript) > MAX_INPUT_CHARS:
+        message = user_message(document_ref, page_count, transcript)
+        if len(message) > self._settings.bedrock_max_input_chars:
             return AiRunResult(
                 status="failed",
                 error_code="input_too_large",
                 model_id=self._settings.bedrock_model_id,
                 retryable=False,
             )
-        message = user_message(document_ref, page_count, transcript)
         lookup = lines or self.line_lookup
+        log_event(
+            logging.INFO,
+            "ai.started",
+            stage="ai",
+            model_id=self._settings.bedrock_model_id,
+            prompt_version=PROMPT_VERSION,
+            input_chars=len(message),
+        )
         first = self._invoke(message, self._settings.bedrock_max_output_tokens)
         if self._needs_repair(first, document_ref) and self.invocations < 2:
-            repair = message + "\n\nThe previous response was invalid. Return only the JSON object."
-            second = self._invoke(repair, RETRY_MAX_TOKENS)
+            second = self._invoke(message, self._settings.bedrock_retry_max_output_tokens)
             return self._from_call(second, document_ref, lookup, attempts=self.invocations)
         return self._from_call(first, document_ref, lookup, attempts=self.invocations)
 
     def _needs_repair(self, call: _Call, document_ref: str) -> bool:
-        if call.error_code == "bedrock_timeout":
+        if call.application_retry:
             return True
         if call.error_code is not None:
             return False
@@ -242,6 +260,7 @@ class BotoLanguageModel:
             aws_request_id=None,
             error_code=code,
             retryable=retryable,
+            application_retry=name == "ReadTimeoutError",
         )
 
     def _parse(self, text: str, document_ref: str) -> dict[str, Any] | None:
@@ -271,8 +290,9 @@ class BotoLanguageModel:
                 input_tokens=call.input_tokens,
                 output_tokens=call.output_tokens,
                 latency_ms=call.latency_ms,
+                estimated_cost_usd=self._cost(call),
                 model_id=self._settings.bedrock_model_id,
-                retryable=True,
+                retryable=False,
                 aws_request_id=call.aws_request_id,
             )
         return AiRunResult(
@@ -282,6 +302,7 @@ class BotoLanguageModel:
             input_tokens=call.input_tokens,
             output_tokens=call.output_tokens,
             latency_ms=call.latency_ms,
+            estimated_cost_usd=self._cost(call),
             output=output,
             warnings=ground(output, lines),
             model_id=self._settings.bedrock_model_id,
@@ -291,10 +312,16 @@ class BotoLanguageModel:
     def _invalid(self, call: _Call, *, attempts: int) -> AiRunResult:
         if call.stop_reason not in {None, "end_turn"} | _RETRYABLE_STOPS:
             code = "model_refusal"
+            raw = None
+            retryable = False
         elif call.stop_reason == "max_tokens":
             code = "output_truncated"
+            raw = call.text[:500_000] or None
+            retryable = True
         else:
             code = "output_invalid"
+            raw = call.text[:500_000] or None
+            retryable = True
         return AiRunResult(
             status="failed",
             error_code=code,
@@ -303,9 +330,10 @@ class BotoLanguageModel:
             input_tokens=call.input_tokens,
             output_tokens=call.output_tokens,
             latency_ms=call.latency_ms,
-            raw_output_text=call.text[:500_000] or None,
+            estimated_cost_usd=self._cost(call),
+            raw_output_text=raw,
             model_id=self._settings.bedrock_model_id,
-            retryable=True,
+            retryable=retryable,
             aws_request_id=call.aws_request_id,
         )
 
@@ -325,6 +353,7 @@ class BotoLanguageModel:
                 input_tokens=call.input_tokens,
                 output_tokens=call.output_tokens,
                 latency_ms=call.latency_ms,
+                estimated_cost_usd=self._cost(call),
                 model_id=self._settings.bedrock_model_id,
                 retryable=call.retryable,
                 aws_request_id=call.aws_request_id,
@@ -335,6 +364,9 @@ class BotoLanguageModel:
         if parsed is None:
             return self._invalid(call, attempts=attempts)
         return self._success(call, parsed, lines, attempts=attempts)
+
+    def _cost(self, call: _Call) -> Decimal:
+        return bedrock_token_cost(self._settings, call.input_tokens, call.output_tokens)
 
 
 def map_ai_error(code: str) -> tuple[str, bool]:

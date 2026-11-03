@@ -245,6 +245,47 @@ def test_grounding_fixtures_each_have_one_warning() -> None:
         assert [item["code"] for item in warnings] == [code]
 
 
+def test_grounding_checks_formats_support_and_phone_extensions() -> None:
+    lines = {"p1-l001": "Jordan Sample Phone: (856) 555-0142 x12"}
+    phone = _base_extraction()
+    phone["patient"]["phone"] = {  # type: ignore[index]
+        "value": "(856) 555-0142 x12",
+        "status": "explicit",
+        "evidence": [{"line_id": "p1-l001", "quote": "Phone: (856) 555-0142 x12"}],
+        "note": "",
+    }
+    assert ground(phone, lines, today=TODAY) == []
+    unsupported = _base_extraction()
+    unsupported["specialty_suggestion"]["label"] = "cardiology"  # type: ignore[index]
+    unsupported["specialty_suggestion"]["candidates"] = []  # type: ignore[index]
+    unsupported["specialty_suggestion"]["evidence"] = []  # type: ignore[index]
+    ungrounded = _base_extraction()
+    ungrounded["patient"]["full_name"] = {  # type: ignore[index]
+        "value": "Not Written",
+        "status": "explicit",
+        "evidence": [{"line_id": "p1-l001", "quote": "Jordan Sample"}],
+        "note": "",
+    }
+    future = _base_extraction()
+    future["patient"]["date_of_birth"] = {  # type: ignore[index]
+        "value": "2099-01-01",
+        "status": "explicit",
+        "evidence": [{"line_id": "p1-l001", "quote": "2099-01-01"}],
+        "note": "",
+    }
+    flags = _base_extraction()
+    flags["document_flags"]["multiple_patients_suspected"] = True  # type: ignore[index]
+    cases = [
+        (unsupported, {"p1-l001": "Jordan Sample"}, "suggestion_unsupported"),
+        (ungrounded, {"p1-l001": "Jordan Sample"}, "value_unverified"),
+        (future, {"p1-l001": "Jordan Sample 2099-01-01"}, "format_invalid"),
+        (flags, {"p1-l001": "Jordan Sample"}, "flag_issue_inconsistent"),
+    ]
+    for payload, lookup, code in cases:
+        warnings = ground(payload, lookup, today=TODAY)
+        assert [item["code"] for item in warnings] == [code]
+
+
 def test_prompt_and_schema_are_verbatim() -> None:
     direction = (ROOT / "Agent Directions" / "AGENT_F_AI_PROCESSING.md").read_text(encoding="utf-8")
     start = direction.index("```text\n", direction.index("## 9. Agreed system prompt"))

@@ -106,9 +106,17 @@ def _format_code(path: str, value: str, today: date) -> str | None:
 
 
 def _nanp(value: str) -> bool:
+    """Ten US digits, with an optional leading 1 and an extension of up to six digits."""
+
     digits = _digits(value)
-    if len(digits) == 11 and digits.startswith("1"):
+    if digits.startswith("1") and len(digits) >= 11:
         digits = digits[1:]
+    extension = ""
+    if len(digits) > 10:
+        extension = digits[10:]
+        digits = digits[:10]
+    if extension and not 1 <= len(extension) <= 6:
+        return False
     return len(digits) == 10 and digits[0] not in "01" and digits[3] not in "01"
 
 

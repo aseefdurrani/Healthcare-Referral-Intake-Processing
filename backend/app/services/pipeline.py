@@ -14,7 +14,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.adapters.llm import AiRunResult, map_ai_error
+from app.adapters.llm import AiRunResult, bedrock_token_cost, map_ai_error
 from app.adapters.ocr import JOB_TTL, OcrCollect, TextractFailure, client_request_token
 from app.adapters.storage import ObjectMissing, StorageError
 from app.core.config import Settings
@@ -411,14 +411,6 @@ class Pipeline:
     def _extract(self, ocr: OcrRun, document: Document) -> AiRunResult:
         normalized = ocr.normalized if isinstance(ocr.normalized, dict) else {}
         transcript = render_for_llm(normalized)
-        log_event(
-            logging.INFO,
-            "ai.started",
-            stage="ai",
-            model_id=self.settings.bedrock_model_id,
-            prompt_version="referral-extract-v1",
-            input_chars=len(transcript),
-        )
         started = self.clock.now()
         result = self.model.extract(
             document_ref=str(document.id),
@@ -433,6 +425,13 @@ class Pipeline:
         )
         return result
 
+    def _model_cost(self, result: AiRunResult) -> Decimal:
+        if result.estimated_cost_usd is not None:
+            return result.estimated_cost_usd
+        return bedrock_token_cost(
+            self.settings, result.input_tokens or 0, result.output_tokens or 0
+        )
+
     def _save_model(
         self,
         session: Session,
@@ -442,15 +441,6 @@ class Pipeline:
         result: AiRunResult,
     ) -> None:
         if result.status == "skipped":
-            log_event(
-                logging.WARNING,
-                "ai.failed",
-                stage="ai",
-                error_code="AI_FAILED",
-                retryable=True,
-                attempt=run.attempt,
-                model_id=self.settings.bedrock_model_id,
-            )
             self._open_review(
                 session,
                 run.id,
@@ -496,9 +486,7 @@ class Pipeline:
             latency_ms=result.latency_ms or 0,
             stop_reason=result.stop_reason or "end_turn",
             schema_valid=True,
-            estimated_cost_usd=float(
-                _money(self.settings, 0, result.input_tokens or 0, result.output_tokens or 0)
-            ),
+            estimated_cost_usd=float(self._model_cost(result)),
             aws_request_id=result.aws_request_id,
         )
         self._open_review(
@@ -543,9 +531,7 @@ class Pipeline:
                 input_tokens=result.input_tokens,
                 output_tokens=result.output_tokens,
                 latency_ms=result.latency_ms,
-                estimated_cost_usd=_money(
-                    self.settings, 0, result.input_tokens or 0, result.output_tokens or 0
-                ),
+                estimated_cost_usd=self._model_cost(result),
                 stop_reason=result.stop_reason,
                 validated_output=output,
                 raw_output_text=None if status == "succeeded" else result.raw_output_text,

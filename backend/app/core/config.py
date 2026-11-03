@@ -56,6 +56,8 @@ class Settings(BaseSettings):
     bedrock_model_id: str = "us.anthropic.claude-sonnet-5-5"
     bedrock_read_timeout_seconds: int = Field(default=120, ge=1, le=300)
     bedrock_max_output_tokens: int = Field(default=6000, ge=1, le=6000)
+    bedrock_retry_max_output_tokens: int = Field(default=12_000, ge=1, le=128_000)
+    bedrock_max_input_chars: int = Field(default=120_000, ge=1, le=500_000)
     ai_enabled: bool = True
     textract_feature_types: str = "LAYOUT,FORMS,TABLES"
     max_upload_bytes: int = Field(default=10_000_000, ge=1, le=10_000_000)

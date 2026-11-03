@@ -506,6 +506,73 @@ def test_conflicting_name_blocks_approval(
     assert fixed.status_code == 200
 
 
+def test_specialty_mismatch_must_be_acknowledged(
+    workflow: tuple[TestClient, MemoryStorage, ScriptedTextract, ScriptedModel],
+) -> None:
+    client, _storage, _textract, model = workflow
+    extraction = sample_result().output
+    assert extraction is not None
+    extraction["referral"]["requested_specialty"] = {
+        "label": "dermatology",
+        "value": "Dermatology",
+        "status": "explicit",
+        "evidence": [{"line_id": "p1-l001", "quote": LINE}],
+        "note": "",
+    }
+    model.result = AiRunResult(
+        status="succeeded",
+        attempts=1,
+        stop_reason="end_turn",
+        output=extraction,
+        input_tokens=1,
+        output_tokens=1,
+        model_id="us.anthropic.claude-sonnet-5-5",
+    )
+    created = _upload(client, pdf_bytes(1), "mismatch.pdf")
+    _drain(client)
+    referral_id = created.json()["id"]
+    detail = client.get(f"/api/v1/referrals/{referral_id}").json()
+    mismatch = [flag for flag in detail["flags"] if flag["code"] == "specialty_mismatch"]
+    assert len(mismatch) == 1
+    patched = client.patch(
+        f"/api/v1/referrals/{referral_id}",
+        json={
+            "version": detail["version"],
+            "fields": [
+                {"key": "patient.date_of_birth", "value": "1980-01-01"},
+                {"key": "patient.phone", "value": "8565550142"},
+                {"key": "referring_clinician.name", "value": "Alex Placeholder"},
+                {"key": "referring_clinician.phone", "value": "8565550177"},
+                {"key": "referral.reason", "value": "Palpitations"},
+            ],
+        },
+    )
+    assert patched.status_code == 200
+    version = patched.json()["version"]
+    blocked = assert_problem(
+        client.post(
+            f"/api/v1/referrals/{referral_id}/approve",
+            json=_approve(version, ["referring_clinician.fax"]),
+        ),
+        422,
+        "UNRESOLVED_BLOCKING_FLAGS",
+    )
+    errors = blocked["errors"]
+    assert isinstance(errors, list)
+    assert any("specialty_mismatch" in str(item.get("loc")) for item in errors)
+    approved = client.post(
+        f"/api/v1/referrals/{referral_id}/approve",
+        json={
+            **_approve(version, ["referring_clinician.fax"]),
+            "acknowledgements": [
+                {"flag_id": mismatch[0]["id"], "reason": "Staff chose the destination."}
+            ],
+        },
+    )
+    assert approved.status_code == 200
+    assert approved.json()["status"] == "approved"
+
+
 def test_status_poll_writes_no_audit_of_its_own(
     workflow: tuple[TestClient, MemoryStorage, ScriptedTextract, ScriptedModel],
     database: Database,
