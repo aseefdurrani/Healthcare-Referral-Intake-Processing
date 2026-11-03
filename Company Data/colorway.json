@@ -1,0 +1,21 @@
+{
+  "source": "company logo.png",
+  "sourceUrl": "https://www.cortrucent.com/hubfs/Cortrucent_Security_Wordmark-4.png",
+  "notes": "The logo file uses only these two colors. Softer pixels in the file are the same two hex values at lower opacity, used for anti-aliasing on a transparent background.",
+  "colors": [
+    {
+      "name": "Cortrucent Blue",
+      "role": "primary",
+      "hex": "#0090C6",
+      "rgb": "rgb(0, 144, 198)",
+      "usage": "Wordmark \"cortrucent\" and the main geometric mark"
+    },
+    {
+      "name": "Cortrucent Green",
+      "role": "accent",
+      "hex": "#8CC642",
+      "rgb": "rgb(140, 198, 66)",
+      "usage": "\"SECURITY\" subtitle and the green sweep in the mark. The site also uses this green for primary calls to action."
+    }
+  ]
+}

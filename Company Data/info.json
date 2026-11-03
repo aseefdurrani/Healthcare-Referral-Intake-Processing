@@ -1,0 +1,88 @@
+{
+  "name": "Cortrucent",
+  "legalName": "Cortrucent LLC",
+  "brandName": "Cortrucent Security",
+  "website": "https://www.cortrucent.com/",
+  "tagline": "Secure, Transform, and Optimize Your IT Strategy",
+  "headline": "Tailored Cybersecurity & IT Solutions for Growing Businesses",
+  "summary": "Cortrucent is a cybersecurity and IT services firm that helps growing businesses reduce risk, modernize technology, and use automation and AI. It offers managed security, managed IT, fractional CISO and CIO leadership, and business transformation services.",
+  "background": "Cortrucent LLC is based in Berlin, New Jersey. The company presents itself as a long-term partner rather than a one-off vendor: it works as an extension of a client's team, aligning cybersecurity and IT decisions with business goals, risk tolerance, and growth. Its public mission is to protect what matters while helping organizations unlock growth through IT innovation, security, and business transformation. Leadership is split between co-founders Chad R. Graham (CEO) and Shane J. Henszey, CISSP (COO and CISO).",
+  "mission": "Protect what matters most while helping organizations unlock new opportunities for growth through IT innovation, advanced security, and business transformation.",
+  "vision": "To be the trusted partner organizations rely on to transform IT and security into strategic drivers of sustainable growth, operational resilience, and long-term success.",
+  "values": [
+    "Tested Experience",
+    "Real Accountability",
+    "Urgency to Improve",
+    "Straight Talk",
+    "Trusted Results"
+  ],
+  "whatTheyDo": [
+    "Managed cybersecurity, including endpoint detection and response, SIEM/XDR, vulnerability management, incident response, penetration testing, email security, data loss prevention, cloud security, and network security",
+    "Fractional CISO services, including security reviews, policy development, risk assessment, third-party risk, compliance, and M&A security reviews",
+    "Managed IT services, including helpdesk, infrastructure, collaboration, backup and disaster recovery, cloud, and procurement",
+    "Fractional CIO services, including strategy, change management, assessments, project management, and digital transformation",
+    "Data, automation, and AI, including workflow automation, custom applications, data warehousing, generative AI, and agentic AI"
+  ],
+  "industriesNoted": [
+    "Healthcare",
+    "Engineering",
+    "Manufacturing and hydraulics",
+    "Growing businesses and enterprises"
+  ],
+  "complianceFocus": [
+    "HIPAA",
+    "HITRUST",
+    "PCI-DSS",
+    "CMMC",
+    "NERC CIP"
+  ],
+  "headquarters": {
+    "street": "23 Harker Avenue",
+    "city": "Berlin",
+    "state": "NJ",
+    "postalCode": "08009",
+    "country": "United States"
+  },
+  "phone": "+1 (856) 843-8000",
+  "leadership": [
+    {
+      "name": "Chad R. Graham",
+      "title": "Co-Founder & CEO",
+      "email": "chad@cortrucent.com"
+    },
+    {
+      "name": "Shane J. Henszey, CISSP",
+      "title": "Co-Founder, COO & CISO",
+      "email": "shane@cortrucent.com"
+    },
+    {
+      "name": "David A. Naylor, CHCIO",
+      "title": "Fractional CIO",
+      "email": "dave@cortrucent.com"
+    },
+    {
+      "name": "Chuck Flynn",
+      "title": "Fractional CIO, Data & Engineering",
+      "email": "chuck@cortrucent.com"
+    }
+  ],
+  "social": {
+    "linkedin": "https://www.linkedin.com/company/cortrucent/",
+    "facebook": "https://www.facebook.com/cortrucent",
+    "instagram": "https://www.instagram.com/cortrucent/",
+    "x": "https://x.com/cortrucent",
+    "youtube": "https://www.youtube.com/@CortrucentSecurity"
+  },
+  "logo": {
+    "file": "company logo.png",
+    "source": "https://www.cortrucent.com/hubfs/Cortrucent_Security_Wordmark-4.png",
+    "description": "Cortrucent Security wordmark with a geometric mark. The word cortrucent and the mark are blue; SECURITY and the mark accent are green. The background is transparent."
+  },
+  "colors": "colorway.json",
+  "sources": [
+    "https://www.cortrucent.com/",
+    "https://www.cortrucent.com/whyus",
+    "https://www.cortrucent.com/team",
+    "https://www.cortrucent.com/contact-us"
+  ]
+}
