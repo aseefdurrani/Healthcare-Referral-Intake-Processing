@@ -1,0 +1,236 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-tint: var(--surface-tint);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-border-control: var(--border-control);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-brand: var(--brand);
+  --color-brand-green: var(--brand-green);
+  --color-primary-hover: var(--primary-hover);
+  --color-approved: var(--approved);
+  --color-approved-bg: var(--approved-bg);
+  --color-attention: var(--attention);
+  --color-attention-bg: var(--attention-bg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-review: var(--review);
+  --color-review-bg: var(--review-bg);
+  --font-sans: var(--font-ibm-sans), sans-serif;
+  --font-mono: var(--font-ibm-mono), monospace;
+  --radius-control: 6px;
+  --radius-panel: 8px;
+  --shadow-overlay: 0 4px 12px rgb(15 30 43 / 0.08);
+  --shadow-dialog: 0 12px 32px rgb(15 30 43 / 0.16);
+}
+
+:root {
+  --background: #f5f7fa;
+  --foreground: #0f1e2b;
+  --card: #ffffff;
+  --card-foreground: #0f1e2b;
+  --popover: #ffffff;
+  --popover-foreground: #0f1e2b;
+  --primary: #00749f;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2f6;
+  --secondary-foreground: #0f1e2b;
+  --muted: #eef2f6;
+  --muted-foreground: #4a5a69;
+  --accent: #f3f8fb;
+  --accent-foreground: #0f1e2b;
+  --destructive: #b91c1c;
+  --border: #d5dde5;
+  --input: #7a8a98;
+  --ring: #0090c6;
+  --radius: 8px;
+  --canvas: #f5f7fa;
+  --surface: #ffffff;
+  --surface-tint: #f3f8fb;
+  --surface-subtle: #eef2f6;
+  --border-control: #7a8a98;
+  --text: #0f1e2b;
+  --text-muted: #4a5a69;
+  --brand: #0090c6;
+  --brand-green: #8cc642;
+  --primary-hover: #006a92;
+  --approved: #166534;
+  --approved-bg: #e8f5ec;
+  --attention: #92400e;
+  --attention-bg: #fdf1e3;
+  --danger: #b91c1c;
+  --danger-bg: #fbeaea;
+  --review: #006a92;
+  --review-bg: #e6f3f9;
+  --control-height: 36px;
+  --chart-1: #00749f;
+  --chart-2: #4a5a69;
+  --chart-3: #166534;
+  --chart-4: #92400e;
+  --chart-5: #b91c1c;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f1e2b;
+  --sidebar-primary: #00749f;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f3f8fb;
+  --sidebar-accent-foreground: #0f1e2b;
+  --sidebar-border: #d5dde5;
+  --sidebar-ring: #0090c6;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-canvas text-text antialiased;
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
+[data-slot="button"],
+[data-slot="input"],
+[data-slot="textarea"],
+[data-slot="select-trigger"],
+[data-slot="tabs-list"],
+[data-slot="tabs-trigger"],
+[data-slot="badge"],
+[data-slot="checkbox"] {
+  border-radius: var(--radius-control);
+}
+
+[data-slot="button"][data-size="default"],
+[data-slot="button"][data-size="lg"],
+[data-slot="input"],
+[data-slot="select-trigger"] {
+  min-height: var(--control-height);
+  height: var(--control-height);
+}
+
+[data-slot="button"][data-variant="default"]:hover {
+  background: var(--primary-hover);
+}
+
+[data-slot="dialog-content"],
+[data-slot="dropdown-menu-content"],
+[data-slot="select-content"],
+[data-slot="tooltip-content"] {
+  border-radius: var(--radius-panel);
+}
+
+[data-slot="dialog-content"] {
+  box-shadow: var(--shadow-dialog);
+}
+
+[data-slot="dropdown-menu-content"],
+[data-slot="select-content"],
+[data-slot="tooltip-content"] {
+  box-shadow: var(--shadow-overlay);
+}
+
+[data-slot="table-row"] {
+  height: var(--control-height);
+}
+
+[data-slot="table-head"] {
+  background: var(--surface-subtle);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
+[data-slot="table-cell"] {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="tab"]:focus-visible,
+[data-slot="button"]:focus-visible,
+[data-slot="checkbox"]:focus-visible,
+[data-slot="select-trigger"]:focus-visible,
+[data-slot="tabs-trigger"]:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.large-screen-note {
+  display: none;
+}
+
+.review-split {
+  display: grid;
+  grid-template-columns: minmax(0, 45%) minmax(0, 55%);
+  min-height: 0;
+}
+
+.doc-toggle {
+  display: none;
+}
+
+@media (max-width: 1279px) {
+  .review-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .doc-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 1023px) {
+  .review-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .large-screen-note {
+    display: block;
+  }
+}
+
+@media (pointer: coarse) {
+  :root {
+    --control-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="skeleton"],
+  .animate-spin,
+  .animate-pulse {
+    animation: none;
+  }
+}
