@@ -1,0 +1,163 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["document_ref", "patient", "referring_clinician", "referral", "specialty_suggestion", "document_flags", "issues"],
+  "properties": {
+    "document_ref": { "type": "string", "description": "Copy of document_ref from the request." },
+    "patient": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["full_name", "date_of_birth", "phone", "email", "address", "identifiers"],
+      "properties": {
+        "full_name": { "$ref": "#/$defs/field" },
+        "date_of_birth": { "$ref": "#/$defs/field" },
+        "phone": { "$ref": "#/$defs/field" },
+        "email": { "$ref": "#/$defs/field" },
+        "address": { "$ref": "#/$defs/field" },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "field"],
+            "properties": {
+              "label": { "type": "string", "description": "Identifier label as printed, e.g. MRN." },
+              "field": { "$ref": "#/$defs/field" }
+            }
+          }
+        }
+      }
+    },
+    "referring_clinician": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "organization", "phone", "fax", "npi"],
+      "properties": {
+        "name": { "$ref": "#/$defs/field" },
+        "organization": { "$ref": "#/$defs/field" },
+        "phone": { "$ref": "#/$defs/field" },
+        "fax": { "$ref": "#/$defs/field" },
+        "npi": { "$ref": "#/$defs/field" }
+      }
+    },
+    "referral": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["referral_date", "reason", "sender_priority", "requested_specialty", "diagnosis_codes"],
+      "properties": {
+        "referral_date": { "$ref": "#/$defs/field" },
+        "reason": { "$ref": "#/$defs/field" },
+        "sender_priority": { "$ref": "#/$defs/priority_field" },
+        "requested_specialty": { "$ref": "#/$defs/requested_specialty_field" },
+        "diagnosis_codes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["code", "description", "evidence"],
+            "properties": {
+              "code": { "type": "string" },
+              "description": { "type": "string" },
+              "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+            }
+          }
+        }
+      }
+    },
+    "specialty_suggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "other_specialty_name", "candidates", "relation_to_request", "rationale", "evidence"],
+      "properties": {
+        "label": { "type": "string", "enum": ["cardiology", "dermatology", "gastroenterology", "neurology", "orthopedics", "pulmonology", "other_specialty", "uncertain"] },
+        "other_specialty_name": { "type": "string" },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["label", "reason"],
+            "properties": {
+              "label": { "type": "string", "enum": ["cardiology", "dermatology", "gastroenterology", "neurology", "orthopedics", "pulmonology", "other_specialty"] },
+              "reason": { "type": "string" }
+            }
+          }
+        },
+        "relation_to_request": { "type": "string", "enum": ["matches_request", "differs_from_request", "no_request_stated", "request_unclear"] },
+        "rationale": { "type": "string" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+      }
+    },
+    "document_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["multiple_patients_suspected", "embedded_instructions_detected", "illegible_or_incomplete_content", "not_a_referral"],
+      "properties": {
+        "multiple_patients_suspected": { "type": "boolean" },
+        "embedded_instructions_detected": { "type": "boolean" },
+        "illegible_or_incomplete_content": { "type": "boolean" },
+        "not_a_referral": { "type": "boolean" }
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "detail", "evidence"],
+        "properties": {
+          "type": { "type": "string", "enum": ["multiple_patients", "embedded_instructions", "conflicting_identifiers", "illegible_text", "possibly_incomplete", "not_a_referral", "other"] },
+          "detail": { "type": "string" },
+          "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["line_id", "quote"],
+      "properties": {
+        "line_id": { "type": "string", "pattern": "^p[1-9][0-9]*-(l|kv|cb)[0-9]{3}$" },
+        "quote": { "type": "string" }
+      }
+    },
+    "status": { "type": "string", "enum": ["explicit", "normalized", "not_found", "ambiguous", "conflicting"] },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["value", "status", "evidence", "note"],
+      "properties": {
+        "value": { "type": "string" },
+        "status": { "$ref": "#/$defs/status" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "note": { "type": "string" }
+      }
+    },
+    "priority_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value", "status", "evidence", "note"],
+      "properties": {
+        "label": { "type": "string", "enum": ["urgent", "routine", "other", "not_marked"] },
+        "value": { "type": "string" },
+        "status": { "$ref": "#/$defs/status" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "note": { "type": "string" }
+      }
+    },
+    "requested_specialty_field": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value", "status", "evidence", "note"],
+      "properties": {
+        "label": { "type": "string", "enum": ["cardiology", "dermatology", "gastroenterology", "neurology", "orthopedics", "pulmonology", "other_specialty", "none_stated"] },
+        "value": { "type": "string" },
+        "status": { "$ref": "#/$defs/status" },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}

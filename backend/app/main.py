@@ -1,9 +1,10 @@
-"""Composition root for settings, auth, health, and the local database pool."""
+"""Composition root for settings, auth, health, the database, and the workflow."""
 
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator
+import time
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
 import uvicorn
@@ -12,8 +13,13 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.engine import Engine
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.adapters.aws import build_aws
+from app.adapters.llm import BotoLanguageModel
+from app.adapters.ocr import BotoTextract
+from app.adapters.storage import S3Storage
 from app.api.health import router as health_router
 from app.api.me import router as me_router
+from app.api.referrals import router as referral_router
 from app.core.auth import JwkClient, TokenVerifier, build_jwk_client
 from app.core.config import AppEnv, Settings, load_settings
 from app.core.errors import (
@@ -26,6 +32,10 @@ from app.core.errors import (
 from app.core.logging import configure_logging, log_event
 from app.core.middleware import RequestContextMiddleware
 from app.db.session import build_session_factory, open_database
+from app.services.clock import Clock, SystemClock
+from app.services.intake import reconcile_storing
+from app.services.pipeline import recover
+from app.services.runner import build_runner
 
 UVICORN_HOST = "127.0.0.1"
 UVICORN_PORT = 8000
@@ -36,26 +46,80 @@ def create_app(
     settings: Settings | None = None,
     *,
     jwk_client: JwkClient | None = None,
+    engine: Engine | None = None,
+    storage: object | None = None,
+    textract: object | None = None,
+    bedrock: object | None = None,
+    clock: Clock | None = None,
+    sleeper: Callable[[float], None] | None = None,
 ) -> FastAPI:
     resolved = settings if settings is not None else load_settings()
     configure_logging(resolved)
     docs_enabled = resolved.app_env == AppEnv.LOCAL
+    app_clock = clock if clock is not None else SystemClock()
+    app_sleep = sleeper if sleeper is not None else time.sleep
 
     @asynccontextmanager
     async def lifespan(running: FastAPI) -> AsyncIterator[None]:
         configure_logging(resolved)
         if resolved.allowed_staff_sub == "":
             log_event(logging.WARNING, "auth.forbidden", reason="allow_list_empty")
-        engine: Engine | None = None
-        if resolved.app_env != AppEnv.TEST:
-            engine = open_database(resolved)
+        opened: Engine | None = None
+        if engine is not None:
             running.state.engine = engine
             running.state.session_factory = build_session_factory(engine)
+        elif resolved.app_env != AppEnv.TEST:
+            opened = open_database(resolved)
+            running.state.engine = opened
+            running.state.session_factory = build_session_factory(opened)
+        else:
+            running.state.session_factory = None
+        store = storage
+        reader = textract
+        model = bedrock
+        if store is None and resolved.s3_bucket_name and resolved.app_env != AppEnv.TEST:
+            clients = build_aws(resolved)
+            store = S3Storage(clients.s3, resolved.s3_bucket_name)
+            reader = BotoTextract(clients.textract, resolved)
+            model = BotoLanguageModel(clients.bedrock, resolved)
+        running.state.storage = store
+        running.state.textract = reader
+        running.state.bedrock = model
+        running.state.clock = app_clock
+        runner = None
+        factory = running.state.session_factory
+        if factory is not None and store is not None and reader is not None and model is not None:
+            runner = build_runner(
+                factory,
+                storage=store,
+                textract=reader,
+                model=model,
+                settings=resolved,
+                clock=app_clock,
+                sleep=app_sleep,
+            )
+            if resolved.app_env != AppEnv.TEST:
+                startup = factory()
+                try:
+                    pending = recover(startup, app_clock)
+                    reconcile_storing(
+                        startup,
+                        storage=store,
+                        runner=runner,
+                        clock=app_clock,
+                    )
+                finally:
+                    startup.close()
+                for run_id in pending:
+                    runner.submit(run_id)
+        running.state.runner = runner
         try:
             yield
         finally:
-            if engine is not None:
-                engine.dispose()
+            if runner is not None:
+                runner.shutdown()
+            if opened is not None:
+                opened.dispose()
 
     app = FastAPI(
         title="Cortrucent Intake API",
@@ -73,8 +137,12 @@ def create_app(
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(Exception, unhandled_error_handler)
     app.add_middleware(RequestContextMiddleware)
+    app.state.clock = app_clock
+    app.state.runner = None
+    app.state.storage = storage
     app.include_router(health_router)
     app.include_router(me_router)
+    app.include_router(referral_router)
     return app
 
 

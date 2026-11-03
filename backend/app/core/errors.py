@@ -64,6 +64,69 @@ _CATALOG: dict[str, tuple[int, str, str, dict[str, str] | None]] = {
         None,
     ),
     "INTERNAL_ERROR": (500, "Internal error", "The request could not be completed.", None),
+    "REFERRAL_NOT_FOUND": (404, "Referral not found", "No referral matches this id.", None),
+    "VERSION_CONFLICT": (
+        409,
+        "Referral changed since it was loaded",
+        "Reload the referral and try again.",
+        None,
+    ),
+    "INVALID_TRANSITION": (
+        409,
+        "Invalid transition",
+        "This action is not available for the current status.",
+        None,
+    ),
+    "NOT_RETRYABLE": (409, "Not retryable", "This referral cannot be retried.", None),
+    "RETRY_LIMIT_REACHED": (
+        409,
+        "Retry limit reached",
+        "This referral has used its processing attempts.",
+        None,
+    ),
+    "IDEMPOTENCY_KEY_REUSED": (
+        409,
+        "Idempotency key reused",
+        "This idempotency key was used for a different file.",
+        None,
+    ),
+    "LENGTH_REQUIRED": (411, "Length required", "Content-Length is required.", None),
+    "FILE_TOO_LARGE": (413, "File is too large", "The file exceeds 10000000 bytes.", None),
+    "UNSUPPORTED_FILE_TYPE": (
+        415,
+        "Unsupported file type",
+        "Upload a PDF, PNG, or JPEG.",
+        None,
+    ),
+    "TOO_MANY_PAGES": (422, "Too many pages", "A PDF can have at most 10 pages.", None),
+    "ENCRYPTED_PDF": (
+        422,
+        "Encrypted PDF",
+        "Password-protected PDFs are not accepted.",
+        None,
+    ),
+    "UNREADABLE_PDF": (422, "Unreadable PDF", "The PDF could not be read.", None),
+    "EMPTY_FILE": (422, "Empty file", "The file is empty.", None),
+    "UNKNOWN_FIELD": (422, "Unknown field", "The field key is not part of the referral.", None),
+    "UNKNOWN_SPECIALTY": (
+        422,
+        "Unknown specialty",
+        "The destination specialty is not recognized.",
+        None,
+    ),
+    "UNKNOWN_FLAG": (422, "Unknown flag", "The flag is not part of this referral.", None),
+    "UNRESOLVED_BLOCKING_FLAGS": (
+        422,
+        "Approval requirements are not met",
+        "Resolve the listed items before approving.",
+        None,
+    ),
+    "DEPENDENCY_UNAVAILABLE": (
+        503,
+        "Dependency unavailable",
+        "The document service could not complete the request.",
+        None,
+    ),
 }
 
 
@@ -82,6 +145,7 @@ class AppError(Exception):
         errors: list[dict[str, object]] | None = None,
         actor_id: str | None = None,
         exception_type: str | None = None,
+        extra: dict[str, object] | None = None,
     ) -> None:
         super().__init__(code)
         self.status = status
@@ -93,6 +157,7 @@ class AppError(Exception):
         self.errors = errors
         self.actor_id = actor_id
         self.exception_type = exception_type
+        self.extra = extra or {}
 
 
 def problem(
@@ -102,6 +167,7 @@ def problem(
     actor_id: str | None = None,
     exception_type: str | None = None,
     errors: list[dict[str, object]] | None = None,
+    extra: dict[str, object] | None = None,
 ) -> AppError:
     status, title, detail, headers = _CATALOG[code]
     return AppError(
@@ -114,6 +180,7 @@ def problem(
         actor_id=actor_id,
         exception_type=exception_type,
         errors=errors,
+        extra=extra,
     )
 
 
@@ -136,6 +203,7 @@ def problem_response(
     detail: str,
     headers: Mapping[str, str] | None = None,
     errors: list[dict[str, object]] | None = None,
+    extra: Mapping[str, object] | None = None,
 ) -> JSONResponse:
     body: dict[str, object] = {
         "type": f"urn:cortrucent:problem:{code.lower().replace('_', '-')}",
@@ -147,6 +215,9 @@ def problem_response(
     }
     if errors:
         body["errors"] = errors
+    for key, value in (extra or {}).items():
+        if key not in body:
+            body[key] = value
     response_headers = {
         "X-Request-ID": str(body["correlation_id"]),
         "X-Content-Type-Options": "nosniff",
@@ -203,6 +274,7 @@ async def app_error_handler(request: Request, exc: Exception) -> JSONResponse:
         detail=exc.detail,
         headers=exc.headers,
         errors=exc.errors,
+        extra=exc.extra,
     )
 
 

@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import logging
+import uuid
+from collections.abc import Iterator
 from typing import Annotated
 
 from fastapi import Header, Request
+from sqlalchemy.orm import Session
 
 from app.core.auth import StaffPrincipal, TokenVerifier, allow_list_is_empty, parse_bearer
 from app.core.config import Settings
-from app.core.errors import AppError
+from app.core.errors import AppError, problem, request_id_from
 from app.core.logging import log_event, route_template
 
 
@@ -82,3 +85,21 @@ def get_current_staff(request: Request) -> StaffPrincipal:
         _log_auth_failure(request, failure)
         raise failure
     return staff
+
+
+def get_session(request: Request) -> Iterator[Session]:
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is None:
+        raise problem("DEPENDENCY_UNAVAILABLE")
+    session = factory()
+    try:
+        yield session
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def request_uuid(request: Request) -> uuid.UUID:
+    return uuid.UUID(request_id_from(request))

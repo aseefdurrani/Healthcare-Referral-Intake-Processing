@@ -158,6 +158,17 @@ _EVENTS: dict[str, dict[str, str]] = {
         "attempt": "int",
         "aws_request_id": "aws_id",
     },
+    "ocr.preflight_rejected": {"reason": "snake", "size_bytes": "int"},
+    "ocr.job_timed_out": {
+        "stage": "stage",
+        "textract_job_id": "aws_id",
+        "attempt": "int",
+    },
+    "ocr.job_resumed": {
+        "stage": "stage",
+        "textract_job_id": "aws_id",
+        "attempt": "int",
+    },
     "ai.started": {
         "stage": "stage",
         "model_id": "model_id",
