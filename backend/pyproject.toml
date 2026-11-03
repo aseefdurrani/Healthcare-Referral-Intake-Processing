@@ -1,0 +1,53 @@
+[project]
+name = "cortrucent-backend"
+version = "0.1.0"
+description = "Local API for the Cortrucent referral intake demo"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "alembic>=1.20.1",
+    "boto3>=1.43.123",
+    "fastapi>=0.162.0",
+    "psycopg[binary]>=3.3.7",
+    "pydantic>=2.14.2",
+    "pydantic-settings>=2.16.2",
+    "pyjwt[crypto]>=2.15.1",
+    "pypdf>=6.21.4",
+    "python-multipart>=0.0.33",
+    "sqlalchemy>=2.1.6",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.0",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-m", "not live", "--strict-markers"]
+markers = ["live: opt-in calls to AWS; excluded from the default run"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.mypy]
+python_version = "3.14"
+packages = ["app"]
+disallow_untyped_defs = true
+warn_unused_ignores = true
+check_untyped_defs = true
