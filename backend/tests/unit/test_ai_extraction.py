@@ -98,6 +98,14 @@ def test_limits_profile_repair_cost_and_refusal() -> None:
     )
     assert haiku.calls[0]["additionalModelRequestFields"]["thinking"] == {"type": "disabled"}
 
+    terra = _Scripted([_response(_payload())])
+    _model(terra, bedrock_model_id="us.openai.gpt-6.1-terra").extract(
+        document_ref="doc-1", page_count=1, transcript="short", lines={"p1-l001": "Jordan Sample"}
+    )
+    assert terra.calls[0]["modelId"] == "us.openai.gpt-6.1-terra"
+    assert terra.calls[0]["additionalModelRequestFields"]["reasoning"] == {"effort": "medium"}
+    assert terra.calls[0]["additionalModelRequestFields"]["text"] == {"format": {"strict": True}}
+
     repair = _Scripted(
         [
             _response("{", "max_tokens"),

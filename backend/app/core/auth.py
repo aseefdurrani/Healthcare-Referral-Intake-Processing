@@ -15,7 +15,8 @@ from app.core.errors import problem
 
 _MAX_TOKEN_BYTES = 8192
 _LEEWAY_SECONDS = 30
-_KID = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+# Cognito key ids are base64, so they include "+", "/", and "=".
+_KID = re.compile(r"^[A-Za-z0-9+/_=-]{1,128}$")
 
 
 class JwkClient(Protocol):

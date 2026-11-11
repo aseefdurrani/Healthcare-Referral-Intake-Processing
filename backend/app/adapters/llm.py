@@ -42,6 +42,11 @@ MODEL_PROFILES: dict[str, dict[str, object]] = {
         "thinking": {"type": "disabled"},
         "output_config": {"effort": "medium"},
     },
+    # Runtime accepts only the geo profile. High reasoning plus strict JSON schema.
+    "us.openai.gpt-6.1-terra": {
+        "reasoning": {"effort": "medium"},
+        "text": {"format": {"strict": True}},
+    },
 }
 
 _RETRYABLE_STOPS = {"max_tokens", "malformed_model_output"}

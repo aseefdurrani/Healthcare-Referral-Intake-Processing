@@ -16,6 +16,7 @@ from tests.conftest import (
     KID,
     OTHER_SUB,
     STAFF_SUB,
+    MapJwkClient,
     SigningMaterial,
     assert_problem,
     build_settings,
@@ -115,6 +116,18 @@ def test_t7_expiry_respects_thirty_second_leeway(
     assert_problem(response, 401, "TOKEN_EXPIRED")
     within = make_token(material, exp=now - 20, iat=now - 120)
     response = api_client.get("/api/v1/me", headers=_bearer(within))
+    assert response.status_code == 200
+
+
+def test_cognito_base64_kid_is_accepted(
+    material: SigningMaterial,
+    staff_settings: Settings,
+) -> None:
+    kid = "r/DbeUCgF37OLTCIMbHKv7ctvnBAdYyT/CH6jrD6q2Y="
+    app = create_app(staff_settings, jwk_client=MapJwkClient({kid: material.jwk}))
+    token = make_token(material, kid=kid)
+    with TestClient(app) as client:
+        response = client.get("/api/v1/me", headers=_bearer(token))
     assert response.status_code == 200
 
 

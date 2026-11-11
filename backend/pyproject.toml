@@ -6,6 +6,7 @@ requires-python = ">=3.14,<3.15"
 dependencies = [
     "alembic>=1.20.1",
     "boto3>=1.43.123",
+    "botocore[crt]>=1.43.123",
     "fastapi>=0.162.0",
     "psycopg[binary]>=3.3.7",
     "pydantic>=2.14.2",
