@@ -1,5 +1,7 @@
 # AGENT F — AI Processing (Amazon Bedrock)
 
+> **November 11, 2026 amendment:** This is the original Bedrock design and an inactive implementation reference. The user chose direct OpenAI Responses API for the synthetic-only demo after Bedrock model authorization blocked live invocation. See `README.md` and `docs/openai-demo.md` for the active integration. The Bedrock adapter remains importable and tested but is not constructed by the application. Do not follow the Bedrock setup or pricing sections below for the active demo.
+
 | | |
 |:--|:--|
 | **Component** | F — AI interpretation, structured extraction, and specialty suggestion |

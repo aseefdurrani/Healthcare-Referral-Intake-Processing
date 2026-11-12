@@ -108,7 +108,8 @@ def test_example_lists_placeholders_and_no_secrets() -> None:
         for line in text.splitlines()
         if line and not line.startswith("#") and "=" in line
     }
-    for field_name in Settings.model_fields:
+    inactive_bedrock = {name for name in Settings.model_fields if name.startswith("bedrock_")}
+    for field_name in Settings.model_fields.keys() - inactive_bedrock:
         assert field_name.upper() in names
 
 

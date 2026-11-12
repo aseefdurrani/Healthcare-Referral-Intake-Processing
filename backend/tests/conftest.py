@@ -32,9 +32,9 @@ os.environ.update(
         "COGNITO_USER_POOL_ID": "us-east-2_TESTPOOL1",
         "COGNITO_APP_CLIENT_ID": "test-client-id",
         "ALLOWED_STAFF_SUB": "",
-        "BEDROCK_MODEL_ID": "us.anthropic.claude-sonnet-5-5",
-        "BEDROCK_READ_TIMEOUT_SECONDS": "120",
-        "BEDROCK_MAX_OUTPUT_TOKENS": "6000",
+        "OPENAI_MODEL_ID": "gpt-6.1-terra",
+        "OPENAI_TIMEOUT_SECONDS": "90",
+        "OPENAI_MAX_OUTPUT_TOKENS": "6000",
         "AI_ENABLED": "true",
         "TEXTRACT_FEATURE_TYPES": "LAYOUT,FORMS,TABLES",
         "MAX_UPLOAD_BYTES": "10000000",
@@ -43,9 +43,9 @@ os.environ.update(
         "PROCESSING_RUN_TIMEOUT_SECONDS": "300",
         "PROCESSING_MAX_ATTEMPTS": "3",
         "TEXTRACT_USD_PER_PAGE": "0.065",
-        "BEDROCK_INPUT_USD_PER_1K_TOKENS": "0.0022",
-        "BEDROCK_OUTPUT_USD_PER_1K_TOKENS": "0.011",
-        "PRICING_RATES_AS_OF": "2026-11-03",
+        "OPENAI_INPUT_USD_PER_1M_TOKENS": "1.00",
+        "OPENAI_OUTPUT_USD_PER_1M_TOKENS": "5.00",
+        "PRICING_RATES_AS_OF": "2026-11-11",
     }
 )
 

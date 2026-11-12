@@ -1,5 +1,7 @@
 # AGENT I — Observability and Audit (Amazon CloudWatch + AWS CloudTrail)
 
+> **November 11, 2026 amendment:** For the active synthetic demo, AI calls go directly to OpenAI, not Bedrock. `ai.*` events record the model and safe `provider_request_id`; OpenAI requests are not AWS CloudTrail Bedrock events. CloudTrail remains relevant to S3 and Textract. The earlier Bedrock tracing examples below are historical; see `docs/openai-demo.md`.
+
 | Item | Value |
 |:--|:--|
 | Component | **I — Monitoring & audit logging** (Amazon CloudWatch + AWS CloudTrail) |

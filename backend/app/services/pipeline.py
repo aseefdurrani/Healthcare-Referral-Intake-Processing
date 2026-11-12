@@ -14,9 +14,9 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.adapters.llm import AiRunResult, bedrock_token_cost, map_ai_error
 from app.adapters.ocr import JOB_TTL, OcrCollect, TextractFailure, client_request_token
 from app.adapters.storage import ObjectMissing, StorageError
+from app.ai.contracts import AiRunResult, map_ai_error
 from app.core.config import Settings
 from app.core.logging import (
     document_id_var,
@@ -38,10 +38,13 @@ from app.services.persistence import add_audit, sync_flags
 _FEATURES = ["LAYOUT", "FORMS", "TABLES"]
 
 
-def _money(settings: Settings, pages: int, input_tokens: int, output_tokens: int) -> Decimal:
+def _money(
+    settings: Settings, pages: int, model_cost: Decimal | None = Decimal(0)
+) -> Decimal | None:
+    if model_cost is None:
+        return None
     cost = Decimal(pages) * settings.textract_usd_per_page
-    cost += (Decimal(input_tokens) / Decimal(1000)) * settings.bedrock_input_usd_per_1k_tokens
-    cost += (Decimal(output_tokens) / Decimal(1000)) * settings.bedrock_output_usd_per_1k_tokens
+    cost += model_cost
     return cost.quantize(Decimal("0.000001"))
 
 
@@ -163,7 +166,7 @@ class Pipeline:
                 retryable=True,
             )
             return
-        result = self._extract(ocr, document)
+        result = self._extract(ocr, document, deadline)
         self._save_model(session, run, document, ocr, result)
 
     def _begin(self, session: Session, run_id: uuid.UUID) -> bool:
@@ -408,7 +411,7 @@ class Pipeline:
         _ = head
         return True
 
-    def _extract(self, ocr: OcrRun, document: Document) -> AiRunResult:
+    def _extract(self, ocr: OcrRun, document: Document, deadline: datetime) -> AiRunResult:
         normalized = ocr.normalized if isinstance(ocr.normalized, dict) else {}
         transcript = render_for_llm(normalized)
         started = self.clock.now()
@@ -417,6 +420,7 @@ class Pipeline:
             page_count=int(normalized.get("page_count") or document.page_count or 1),
             transcript=transcript,
             lines=line_map(normalized),
+            deadline=deadline,
         )
         result.latency_ms = (
             result.latency_ms
@@ -425,12 +429,8 @@ class Pipeline:
         )
         return result
 
-    def _model_cost(self, result: AiRunResult) -> Decimal:
-        if result.estimated_cost_usd is not None:
-            return result.estimated_cost_usd
-        return bedrock_token_cost(
-            self.settings, result.input_tokens or 0, result.output_tokens or 0
-        )
+    def _model_cost(self, result: AiRunResult) -> Decimal | None:
+        return result.estimated_cost_usd
 
     def _save_model(
         self,
@@ -460,8 +460,8 @@ class Pipeline:
                 error_code=code,
                 retryable=retryable,
                 attempt=run.attempt,
-                model_id=self.settings.bedrock_model_id,
-                aws_request_id=result.aws_request_id,
+                model_id=result.model_id,
+                provider_request_id=result.provider_request_id,
             )
             self._open_review(
                 session,
@@ -479,15 +479,17 @@ class Pipeline:
             logging.INFO,
             "ai.completed",
             stage="ai",
-            model_id=self.settings.bedrock_model_id,
+            model_id=result.model_id,
             prompt_version="referral-extract-v1",
             input_tokens=result.input_tokens or 0,
             output_tokens=result.output_tokens or 0,
             latency_ms=result.latency_ms or 0,
             stop_reason=result.stop_reason or "end_turn",
             schema_valid=True,
-            estimated_cost_usd=float(self._model_cost(result)),
-            aws_request_id=result.aws_request_id,
+            estimated_cost_usd=float(result.estimated_cost_usd)
+            if result.estimated_cost_usd is not None
+            else None,
+            provider_request_id=result.provider_request_id,
         )
         self._open_review(
             session,
@@ -524,7 +526,7 @@ class Pipeline:
                 processing_run_id=run.id,
                 referral_id=run.referral_id,
                 status=status,
-                model_id=result.model_id or self.settings.bedrock_model_id,
+                model_id=result.model_id or self.settings.openai_model_id,
                 prompt_version=result.prompt_version,
                 schema_version=result.schema_version,
                 invocation_count=attempts,
@@ -532,6 +534,7 @@ class Pipeline:
                 output_tokens=result.output_tokens,
                 latency_ms=result.latency_ms,
                 estimated_cost_usd=self._model_cost(result),
+                provider_request_id=result.provider_request_id,
                 stop_reason=result.stop_reason,
                 validated_output=output,
                 raw_output_text=None if status == "succeeded" else result.raw_output_text,
@@ -639,8 +642,10 @@ class Pipeline:
         run.finished_at = now
         run.input_tokens = input_tokens or None
         run.output_tokens = output_tokens or None
-        run.bedrock_model_id = self.settings.bedrock_model_id if ai is not None else None
-        run.estimated_cost_usd = _money(self.settings, pages, input_tokens, output_tokens)
+        run.model_id = ai.model_id if ai is not None else None
+        run.estimated_cost_usd = _money(
+            self.settings, pages, ai.estimated_cost_usd if ai is not None else Decimal(0)
+        )
         run.pricing_rates_as_of = self.settings.pricing_rates_as_of
         run.updated_at = now
         add_audit(
@@ -677,7 +682,9 @@ class Pipeline:
             textract_pages=pages,
             input_tokens_total=input_tokens,
             output_tokens_total=output_tokens,
-            estimated_cost_usd=float(run.estimated_cost_usd or 0),
+            estimated_cost_usd=float(run.estimated_cost_usd)
+            if run.estimated_cost_usd is not None
+            else None,
             flag_count=len(drafts),
         )
 
@@ -759,7 +766,7 @@ class Pipeline:
         run.failure_detail = detail
         run.finished_at = now
         run.updated_at = now
-        run.estimated_cost_usd = _money(self.settings, run.textract_pages or 0, 0, 0)
+        run.estimated_cost_usd = _money(self.settings, run.textract_pages or 0)
         run.pricing_rates_as_of = self.settings.pricing_rates_as_of
         add_audit(
             session,

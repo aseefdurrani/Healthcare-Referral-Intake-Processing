@@ -14,7 +14,7 @@ from sqlalchemy.engine import Engine
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.adapters.aws import build_aws
-from app.adapters.llm import BotoLanguageModel
+from app.adapters.llm_openai import OpenAILanguageModel
 from app.adapters.ocr import BotoTextract
 from app.adapters.storage import S3Storage
 from app.api.health import router as health_router
@@ -49,11 +49,18 @@ def create_app(
     engine: Engine | None = None,
     storage: object | None = None,
     textract: object | None = None,
-    bedrock: object | None = None,
+    model: object | None = None,
     clock: Clock | None = None,
     sleeper: Callable[[float], None] | None = None,
 ) -> FastAPI:
     resolved = settings if settings is not None else load_settings()
+    if (
+        resolved.app_env != AppEnv.TEST
+        and resolved.s3_bucket_name
+        and resolved.ai_enabled
+        and not resolved.openai_api_key.get_secret_value()
+    ):
+        raise ValueError("OPENAI_API_KEY is required when AI_ENABLED=true")
     configure_logging(resolved)
     docs_enabled = resolved.app_env == AppEnv.LOCAL
     app_clock = clock if clock is not None else SystemClock()
@@ -76,24 +83,38 @@ def create_app(
             running.state.session_factory = None
         store = storage
         reader = textract
-        model = bedrock
+        language_model = model
         if store is None and resolved.s3_bucket_name and resolved.app_env != AppEnv.TEST:
             clients = build_aws(resolved)
             store = S3Storage(clients.s3, resolved.s3_bucket_name)
             reader = BotoTextract(clients.textract, resolved)
-            model = BotoLanguageModel(clients.bedrock, resolved)
+            if resolved.ai_enabled:
+                from openai import OpenAI
+
+                client = OpenAI(
+                    api_key=resolved.openai_api_key.get_secret_value(),
+                    max_retries=0,
+                )
+                language_model = OpenAILanguageModel(client, resolved)
+            else:
+                language_model = OpenAILanguageModel(None, resolved)
         running.state.storage = store
         running.state.textract = reader
-        running.state.bedrock = model
+        running.state.model = language_model
         running.state.clock = app_clock
         runner = None
         factory = running.state.session_factory
-        if factory is not None and store is not None and reader is not None and model is not None:
+        if (
+            factory is not None
+            and store is not None
+            and reader is not None
+            and language_model is not None
+        ):
             runner = build_runner(
                 factory,
                 storage=store,
                 textract=reader,
-                model=model,
+                model=language_model,
                 settings=resolved,
                 clock=app_clock,
                 sleep=app_sleep,

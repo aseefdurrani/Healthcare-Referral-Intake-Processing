@@ -1,4 +1,4 @@
-"""One boto3 session and the three clients the workflow reuses."""
+"""One boto3 session for the active S3 and Textract workflow."""
 
 from __future__ import annotations
 
@@ -31,7 +31,6 @@ def _config(settings: Settings, read_timeout: int, *, s3: bool = False) -> Confi
 class AwsClients:
     s3: Any
     textract: Any
-    bedrock: Any
 
 
 def build_aws(settings: Settings) -> AwsClients:
@@ -42,8 +41,4 @@ def build_aws(settings: Settings) -> AwsClients:
     return AwsClients(
         s3=session.client("s3", config=_config(settings, S3_READ_TIMEOUT, s3=True)),
         textract=session.client("textract", config=_config(settings, TEXTRACT_READ_TIMEOUT)),
-        bedrock=session.client(
-            "bedrock-runtime",
-            config=_config(settings, settings.bedrock_read_timeout_seconds),
-        ),
     )

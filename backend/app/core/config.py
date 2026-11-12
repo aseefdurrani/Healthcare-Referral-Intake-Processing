@@ -53,6 +53,16 @@ class Settings(BaseSettings):
     cognito_app_client_id: str = ""
     allowed_staff_sub: str = ""
 
+    openai_api_key: SecretStr = SecretStr("")
+    openai_model_id: str = "gpt-6.1-terra"
+    openai_timeout_seconds: int = Field(default=90, ge=1, le=180)
+    openai_max_output_tokens: int = Field(default=6000, ge=16, le=128_000)
+    openai_retry_max_output_tokens: int = Field(default=12_000, ge=16, le=128_000)
+    openai_max_input_chars: int = Field(default=120_000, ge=1, le=500_000)
+    openai_input_usd_per_1m_tokens: Decimal = Decimal("1.00")
+    openai_output_usd_per_1m_tokens: Decimal = Decimal("5.00")
+
+    # Retained solely for the inactive Bedrock reference adapter.
     bedrock_model_id: str = "us.anthropic.claude-sonnet-5-5"
     bedrock_read_timeout_seconds: int = Field(default=120, ge=1, le=300)
     bedrock_max_output_tokens: int = Field(default=6000, ge=1, le=6000)
@@ -68,7 +78,7 @@ class Settings(BaseSettings):
     textract_usd_per_page: Decimal = Decimal("0.065")
     bedrock_input_usd_per_1k_tokens: Decimal = Decimal("0.0022")
     bedrock_output_usd_per_1k_tokens: Decimal = Decimal("0.011")
-    pricing_rates_as_of: date = date(2026, 11, 3)
+    pricing_rates_as_of: date = date(2026, 11, 11)
 
     @field_validator("log_level", mode="before")
     @classmethod

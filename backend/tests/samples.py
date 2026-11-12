@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from io import BytesIO
 from typing import Any
 
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
-from app.adapters.llm import AiRunResult
+from app.ai.contracts import AiRunResult
 from app.schemas.ai import ReferralExtractionV1
 
 PNG = bytes.fromhex(
@@ -112,8 +113,10 @@ def sample_result() -> AiRunResult:
         stop_reason="end_turn",
         input_tokens=20,
         output_tokens=30,
+        estimated_cost_usd=Decimal("0.000170"),
         output=sample_extraction(),
-        model_id="us.anthropic.claude-sonnet-5-5",
+        model_id="gpt-6.1-terra",
+        provider_request_id="req_openai_sample",
     )
 
 

@@ -182,7 +182,7 @@ _EVENTS: dict[str, dict[str, str]] = {
         "stop_reason": "snake",
         "schema_valid": "bool",
         "estimated_cost_usd": "money",
-        "aws_request_id": "aws_id",
+        "provider_request_id": "aws_id",
     },
     "ai.failed": {
         "stage": "stage",
@@ -190,7 +190,7 @@ _EVENTS: dict[str, dict[str, str]] = {
         "retryable": "bool",
         "attempt": "int",
         "model_id": "model_id",
-        "aws_request_id": "aws_id",
+        "provider_request_id": "aws_id",
     },
     "validation.completed": {
         "flag_count": "int",

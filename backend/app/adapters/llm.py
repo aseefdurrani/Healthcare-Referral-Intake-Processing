@@ -1,12 +1,11 @@
-"""Bedrock Converse adapter. One repair call, then a recorded failure."""
+"""Inactive Bedrock Converse reference; the demo runs the OpenAI adapter."""
 
 from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
-from pathlib import Path
 from typing import Any
 
 from botocore.exceptions import (  # type: ignore[import-untyped]
@@ -17,21 +16,21 @@ from botocore.exceptions import (  # type: ignore[import-untyped]
 )
 from pydantic import ValidationError
 
+from app.ai.contracts import (
+    PROMPT_VERSION,
+    SCHEMA_DESCRIPTION,
+    SCHEMA_NAME,
+    AiRunResult,
+    load_prompt,
+    load_schema,
+    user_message,
+)
+from app.ai.contracts import SCHEMA_PATH as SCHEMA_PATH
 from app.core.config import Settings
 from app.core.logging import log_event
 from app.schemas.ai import ReferralExtractionV1
 from app.services.grounding import ground
 from app.services.ocr_document import line_map
-
-PROMPT_VERSION = "referral-extract-v1"
-SCHEMA_VERSION = "referral_extraction_v1"
-SCHEMA_NAME = "referral_extraction_v1"
-SCHEMA_DESCRIPTION = (
-    "Structured referral facts with evidence and a non-binding specialty suggestion"
-)
-_ROOT = Path(__file__).resolve().parents[1]
-PROMPT_PATH = _ROOT / "ai" / "prompts" / "referral_extract_v1.txt"
-SCHEMA_PATH = _ROOT / "ai" / "schema" / "referral_extraction_v1.json"
 
 MODEL_PROFILES: dict[str, dict[str, object]] = {
     "us.anthropic.claude-sonnet-5-5": {
@@ -63,47 +62,12 @@ _UNAVAILABLE = {
 }
 
 
-def load_prompt() -> str:
-    return PROMPT_PATH.read_text(encoding="utf-8").rstrip("\n")
-
-
-def load_schema() -> dict[str, Any]:
-    loaded = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    if not isinstance(loaded, dict):
-        raise ValueError("schema")
-    return loaded
-
-
-def user_message(document_ref: str, page_count: int, transcript: str) -> str:
-    return f"document_ref: {document_ref}\npage_count: {page_count}\n{transcript}"
-
-
 def bedrock_token_cost(settings: Settings, input_tokens: int, output_tokens: int) -> Decimal:
     """Sonnet or Haiku token charge. Textract pages are added by the pipeline."""
 
     cost = (Decimal(input_tokens) / Decimal(1000)) * settings.bedrock_input_usd_per_1k_tokens
     cost += (Decimal(output_tokens) / Decimal(1000)) * settings.bedrock_output_usd_per_1k_tokens
     return cost.quantize(Decimal("0.000001"))
-
-
-@dataclass
-class AiRunResult:
-    status: str
-    error_code: str | None = None
-    attempts: int = 0
-    stop_reason: str | None = None
-    latency_ms: int | None = None
-    input_tokens: int | None = None
-    output_tokens: int | None = None
-    estimated_cost_usd: Decimal | None = None
-    output: dict[str, Any] | None = None
-    warnings: list[dict[str, str]] = field(default_factory=list)
-    raw_output_text: str | None = None
-    model_id: str = ""
-    prompt_version: str = PROMPT_VERSION
-    schema_version: str = SCHEMA_VERSION
-    retryable: bool = False
-    aws_request_id: str | None = None
 
 
 @dataclass
@@ -372,25 +336,6 @@ class BotoLanguageModel:
 
     def _cost(self, call: _Call) -> Decimal:
         return bedrock_token_cost(self._settings, call.input_tokens, call.output_tokens)
-
-
-def map_ai_error(code: str) -> tuple[str, bool]:
-    """Map an adapter code onto a processing-run code and whether staff may retry."""
-
-    table = {
-        "output_invalid": ("AI_OUTPUT_INVALID", True),
-        "output_truncated": ("AI_OUTPUT_INVALID", True),
-        "bedrock_request_invalid": ("AI_OUTPUT_INVALID", True),
-        "bedrock_throttled": ("AI_THROTTLED", True),
-        "bedrock_timeout": ("AI_THROTTLED", True),
-        "bedrock_unavailable": ("AI_FAILED", True),
-        "model_refusal": ("AI_FAILED", True),
-        "bedrock_access_denied": ("AI_FAILED", False),
-        "bedrock_model_not_found": ("AI_FAILED", False),
-        "input_too_large": ("AI_FAILED", False),
-        "ai_disabled": ("AI_SKIPPED", True),
-    }
-    return table.get(code, ("AI_FAILED", True))
 
 
 def transcript_lines(document: dict[str, Any]) -> dict[str, str]:

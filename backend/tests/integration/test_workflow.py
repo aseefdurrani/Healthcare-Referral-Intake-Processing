@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import uuid
 from collections.abc import Iterator
+from decimal import Decimal
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,11 +16,11 @@ from tests.fakes import MemoryStorage, ScriptedModel, ScriptedTextract
 from tests.integration.conftest import Database
 from tests.samples import JPEG, LINE, PNG, pdf_bytes, sample_blocks, sample_result
 
-from app.adapters.llm import AiRunResult
 from app.adapters.ocr import OcrCollect
 from app.adapters.storage import ObjectExists, StorageError
+from app.ai.contracts import AiRunResult
 from app.core.auth import JwkClient
-from app.db.models import AuditEvent, ProcessingRun, Referral, ReferralField, ValidationFlag
+from app.db.models import AiRun, AuditEvent, ProcessingRun, Referral, ReferralField, ValidationFlag
 from app.main import create_app
 from app.services.objects import write_once
 
@@ -77,7 +78,7 @@ def workflow(
         engine=database.app_engine,
         storage=storage,
         textract=textract,
-        bedrock=model,
+        model=model,
     )
     token = make_token(material)  # type: ignore[arg-type]
     with TestClient(app) as client:
@@ -162,6 +163,7 @@ def test_rejected_uploads_leave_no_row(
 
 def test_valid_upload_reaches_review(
     workflow: tuple[TestClient, MemoryStorage, ScriptedTextract, ScriptedModel],
+    database: Database,
 ) -> None:
     client, storage, textract, model = workflow
     response = _upload(client, pdf_bytes(2), "synthetic-referral.pdf")
@@ -181,6 +183,15 @@ def test_valid_upload_reaches_review(
     assert "referrals/" not in response.text
     assert textract.starts[0]["token"].startswith("ocr-")
     assert model.calls == 1
+    with Session(database.app_engine) as session:
+        run = session.get(ProcessingRun, uuid.UUID(payload["current_run"]["id"]))
+        assert run is not None
+        ai = session.scalar(select(AiRun).where(AiRun.processing_run_id == run.id))
+        assert ai is not None
+        assert run.model_id == ai.model_id == "gpt-6.1-terra"
+        assert ai.provider_request_id == "req_openai_sample"
+        assert ai.estimated_cost_usd == Decimal("0.000170")
+        assert run.estimated_cost_usd == Decimal("0.065170")
 
 
 def test_duplicate_and_idempotency(
@@ -234,7 +245,7 @@ def test_storage_failure_stays_in_the_inbox(
         engine=database.app_engine,
         storage=Boom(),
         textract=ScriptedTextract(),
-        bedrock=ScriptedModel(sample_result()),
+        model=ScriptedModel(sample_result()),
     )
     token = make_token(material)  # type: ignore[arg-type]
     with TestClient(app) as client:
@@ -485,7 +496,7 @@ def test_conflicting_name_blocks_approval(
         output=extraction,
         input_tokens=1,
         output_tokens=1,
-        model_id="us.anthropic.claude-sonnet-5-5",
+        model_id="gpt-6.1-terra",
     )
     created = _upload(client, pdf_bytes(1), "conflict.pdf")
     _drain(client)
@@ -526,7 +537,7 @@ def test_specialty_mismatch_must_be_acknowledged(
         output=extraction,
         input_tokens=1,
         output_tokens=1,
-        model_id="us.anthropic.claude-sonnet-5-5",
+        model_id="gpt-6.1-terra",
     )
     created = _upload(client, pdf_bytes(1), "mismatch.pdf")
     _drain(client)

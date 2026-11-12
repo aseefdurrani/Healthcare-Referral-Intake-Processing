@@ -1,11 +1,10 @@
-"""In-memory stand-ins for S3, Textract, and Bedrock."""
+"""In-memory stand-ins for S3, Textract, and the model call."""
 
 from __future__ import annotations
 
 import base64
 from typing import Any
 
-from app.adapters.llm import AiRunResult
 from app.adapters.ocr import OcrCollect, StartResult, TextractFailure
 from app.adapters.storage import (
     ObjectExists,
@@ -14,6 +13,7 @@ from app.adapters.storage import (
     PutResult,
     StorageError,
 )
+from app.ai.contracts import AiRunResult
 
 
 class MemoryStorage:

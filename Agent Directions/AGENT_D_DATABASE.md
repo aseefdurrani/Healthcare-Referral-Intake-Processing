@@ -1,5 +1,7 @@
 # AGENT D — Database (PostgreSQL on Amazon RDS)
 
+> **November 11, 2026 amendment:** The active synthetic demo uses direct OpenAI. Migration `0003_openai_demo` renames `processing_runs.bedrock_model_id` to `model_id`, preserving historical values, and adds `ai_runs.provider_request_id`. The original schema description below is historical where it names Bedrock; see `docs/openai-demo.md` for the active flow.
+
 | Field | Value |
 |:--|:--|
 | Component | **D — Relational data** (PostgreSQL on Amazon RDS) |
