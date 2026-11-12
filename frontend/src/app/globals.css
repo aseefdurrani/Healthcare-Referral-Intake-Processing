@@ -134,8 +134,31 @@
   height: var(--control-height);
 }
 
-[data-slot="button"][data-variant="default"]:hover {
+[data-slot="button"][data-variant="default"]:hover:not(:disabled) {
   background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+a[href],
+button:not(:disabled),
+summary,
+select:not(:disabled),
+label:has([data-slot="checkbox"]:not(:disabled)),
+label:has(input[type="checkbox"]:not(:disabled)),
+label:has(input[type="file"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="button"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[data-slot="select-trigger"]:not(:disabled),
+[data-slot="checkbox"]:not(:disabled),
+[data-slot="tabs-trigger"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 [data-slot="dialog-content"],

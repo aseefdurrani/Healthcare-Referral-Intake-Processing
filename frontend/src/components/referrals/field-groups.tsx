@@ -54,7 +54,7 @@ export function FieldGroups({
                     {field.source ? (
                       <button
                         type="button"
-                        className="text-sm text-primary"
+                        className="cursor-pointer text-sm font-medium text-primary underline-offset-2 hover:underline"
                         onClick={() =>
                           onJump(
                             { page: field.source!.page, quote: field.ocr_value, bbox: field.source!.bbox },
@@ -103,7 +103,7 @@ export function FieldGroups({
                         <Textarea value={draft} onChange={(event) => setDraft(event.target.value)} aria-label={field.label} />
                       ) : field.key === "referral.sender_priority" ? (
                         <select
-                          className="h-9 rounded-control border border-border-control bg-surface px-2"
+                          className="h-9 cursor-pointer rounded-control border border-border-control bg-surface px-2"
                           value={draft}
                           aria-label={field.label}
                           onChange={(event) => setDraft(event.target.value)}

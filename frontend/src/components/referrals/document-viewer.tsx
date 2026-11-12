@@ -44,7 +44,7 @@ export function DocumentViewer({
   return (
     <section className="flex min-h-0 flex-col gap-3" aria-label="Document">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span>Document</span>
+        <span className="mr-1 font-medium">Document</span>
         {image ? null : (
           <>
             <Button type="button" variant="outline" disabled={page <= 1} onClick={() => setPage(page - 1)}>

@@ -75,7 +75,7 @@ export function ApproveDialog({
         <label className="block text-sm">
           Destination specialty
           <Select value={draft.destination || undefined} onValueChange={(destination) => onDraft({ ...draft, destination })}>
-            <SelectTrigger className="mt-1" aria-label="Destination specialty">
+            <SelectTrigger className="mt-1 w-full" aria-label="Destination specialty">
               <SelectValue placeholder="Choose a specialty" />
             </SelectTrigger>
             <SelectContent>
@@ -100,7 +100,7 @@ export function ApproveDialog({
         <label className="block text-sm">
           Sender priority
           <Select value={draft.priority || undefined} onValueChange={(priority) => onDraft({ ...draft, priority })}>
-            <SelectTrigger className="mt-1" aria-label="Sender priority">
+            <SelectTrigger className="mt-1 w-full" aria-label="Sender priority">
               <SelectValue placeholder="Confirm sender priority" />
             </SelectTrigger>
             <SelectContent>
@@ -113,8 +113,9 @@ export function ApproveDialog({
           </Select>
         </label>
         {absentKeys.map((key) => (
-          <label key={key} className="flex items-center gap-2 text-sm">
+          <label key={key} className="flex cursor-pointer items-start gap-2.5 text-sm">
             <Checkbox
+              className="mt-0.5"
               checked={draft.absent.includes(key)}
               onCheckedChange={(checked) => {
                 const absent = checked === true ? [...draft.absent, key] : draft.absent.filter((item) => item !== key);
@@ -180,7 +181,7 @@ export function RejectDialog({
         <label className="block text-sm">
           Reason
           <Select value={reason || undefined} onValueChange={(value) => setReason(value as ReasonCode)}>
-            <SelectTrigger className="mt-1" aria-label="Reject reason">
+            <SelectTrigger className="mt-1 w-full" aria-label="Reject reason">
               <SelectValue placeholder="Choose a reason" />
             </SelectTrigger>
             <SelectContent>

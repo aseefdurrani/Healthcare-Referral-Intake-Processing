@@ -108,8 +108,11 @@ export function InboxScreen() {
                 type="button"
                 role="tab"
                 aria-selected={tab === value}
-                className={`rounded-control px-3 text-sm ${tab === value ? "bg-surface-tint text-primary" : "bg-surface text-text"}`}
-                style={{ minHeight: "var(--control-height)" }}
+                className={`inline-flex min-h-(--control-height) cursor-pointer items-center rounded-control border px-3 text-sm transition-colors ${
+                  tab === value
+                    ? "border-brand bg-surface-tint font-medium text-primary"
+                    : "border-border-control bg-surface text-text hover:border-brand hover:bg-surface-tint"
+                }`}
                 onClick={() => {
                   setTabChoice(value);
                   setPage(0);
@@ -119,7 +122,7 @@ export function InboxScreen() {
               </button>
             ))}
           </div>
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
             <label className="sr-only" htmlFor="referral-search">
               Search referral ID or patient name
             </label>
@@ -153,7 +156,11 @@ export function InboxScreen() {
           {filtered.length === 0 ? (
             <p className="text-sm">
               No referrals in {tab === "review" ? "To review" : tab}.{" "}
-              <button type="button" className="text-primary" onClick={() => setTabChoice("all")}>
+              <button
+                type="button"
+                className="cursor-pointer font-medium text-primary underline-offset-2 hover:underline"
+                onClick={() => setTabChoice("all")}
+              >
                 Show all referrals
               </button>
             </p>
@@ -211,7 +218,11 @@ function InboxRow({ item }: { item: ReferralSummary }) {
   return (
     <tr className="border-t border-border hover:bg-surface-tint">
       <td className="px-3 font-mono">
-        <Link href={`/referrals/${item.id}`} className="text-primary" title={item.id}>
+        <Link
+          href={`/referrals/${item.id}`}
+          className="cursor-pointer font-medium text-primary underline-offset-2 hover:underline"
+          title={item.id}
+        >
           {item.id.slice(0, 8)}
         </Link>
       </td>

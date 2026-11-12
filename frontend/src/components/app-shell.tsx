@@ -31,19 +31,19 @@ export function AppShell({
       </a>
       <header className="flex h-16 items-center gap-6 border-b border-border bg-surface px-6">
         <img src="/brand/cortrucent.png" alt="Cortrucent" className="h-6 w-auto" />
-        <div className="flex items-baseline gap-4">
-          <p className="text-base font-semibold leading-6">Referral Intake</p>
-          <Link href="/referrals" className="text-sm text-primary">
+        <div className="flex shrink-0 items-baseline gap-4">
+          <p className="text-base font-semibold leading-6 whitespace-nowrap">Referral Intake</p>
+          <Link href="/referrals" className="cursor-pointer text-sm font-medium text-primary underline-offset-2 hover:underline">
             Referrals
           </Link>
         </div>
-        <div className="ml-auto flex items-center gap-4">
-          <p className="text-xs font-medium leading-4 text-text-muted">Synthetic data only</p>
-          <p className="text-xs font-medium leading-4 text-text-muted">{environment}</p>
+        <div className="ml-auto flex min-w-0 items-center gap-4">
+          <p className="text-xs font-medium leading-4 whitespace-nowrap text-text-muted">Synthetic data only</p>
+          <p className="text-xs font-medium leading-4 whitespace-nowrap text-text-muted">{environment}</p>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" type="button">
-                {email}
+              <Button variant="outline" type="button" className="min-w-0 shrink overflow-hidden">
+                <span className="truncate">{email}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

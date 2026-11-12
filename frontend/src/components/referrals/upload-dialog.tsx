@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -29,6 +29,11 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
   const [serverError, setServerError] = useState<ApiProblem | null>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function clearPicker() {
+    if (inputRef.current) inputRef.current.value = "";
+  }
 
   function choose(next: File | null) {
     setServerError(null);
@@ -36,6 +41,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       setFile(null);
       setKey(null);
       setClientError(null);
+      clearPicker();
       return;
     }
     const reason = validateUpload(next);
@@ -43,6 +49,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
       setFile(null);
       setKey(null);
       setClientError(uploadErrorMessage(next.name, reason));
+      clearPicker();
       return;
     }
     setClientError(null);
@@ -82,7 +89,7 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           <DialogDescription>PDF, PNG, or JPEG, up to 10 MB and 10 pages.</DialogDescription>
         </DialogHeader>
         <div
-          className={`rounded-panel border border-dashed px-4 py-8 text-center ${dragOver ? "border-brand bg-surface-tint" : "border-border-control"}`}
+          className={`flex flex-col items-center rounded-panel border border-dashed px-6 py-8 text-center transition-colors ${dragOver ? "border-brand bg-surface-tint" : "border-border-control bg-canvas"}`}
           onDragOver={(event) => {
             event.preventDefault();
             setDragOver(true);
@@ -99,37 +106,53 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
             choose(dropped[0] ?? null);
           }}
         >
-          <p>Drag a file here, or</p>
-          <label className="mt-2 inline-block">
-            <span className="sr-only">Choose file</span>
-            <input
-              className="block text-sm"
-              type="file"
-              accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg"
-              onChange={(event) => {
-                const list = event.target.files;
-                if (list && list.length > 1) {
-                  setClientError(uploadErrorMessage("files", "count"));
-                  return;
-                }
-                choose(list?.[0] ?? null);
-              }}
-            />
-          </label>
+          <p className="text-sm font-medium">Drag a file here</p>
+          <p className="mt-1 text-sm text-text-muted">or choose one from your computer</p>
+          <input
+            ref={inputRef}
+            className="sr-only"
+            type="file"
+            tabIndex={-1}
+            aria-hidden="true"
+            accept="application/pdf,image/png,image/jpeg,.pdf,.png,.jpg,.jpeg"
+            onChange={(event) => {
+              const list = event.target.files;
+              if (list && list.length > 1) {
+                setClientError(uploadErrorMessage("files", "count"));
+                return;
+              }
+              choose(list?.[0] ?? null);
+            }}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4"
+            disabled={uploading}
+            onClick={() => inputRef.current?.click()}
+          >
+            {file ? "Replace file" : "Choose file"}
+          </Button>
         </div>
         {file ? (
-          <p className="flex items-center justify-between text-sm">
-            <span>
-              {file.name} <span className="tabular text-text-muted">{formatFileSize(file.size)}</span>
-            </span>
-            <Button type="button" variant="outline" onClick={() => choose(null)}>
+          <div className="flex items-center gap-3 rounded-control border border-border bg-surface px-3 py-2">
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-sm font-medium">{file.name}</p>
+              <p className="tabular text-xs text-text-muted">{formatFileSize(file.size)}</p>
+            </div>
+            <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => choose(null)}>
               Remove
             </Button>
-          </p>
+          </div>
         ) : null}
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox checked={attested} onCheckedChange={(value) => setAttested(value === true)} />
-          This document contains only synthetic data.
+        <label className="flex cursor-pointer items-start gap-2.5 rounded-control border border-border bg-surface px-3 py-2.5 text-sm has-[:disabled]:cursor-not-allowed">
+          <Checkbox
+            className="mt-0.5"
+            checked={attested}
+            disabled={uploading}
+            onCheckedChange={(value) => setAttested(value === true)}
+          />
+          <span>This document contains only synthetic data.</span>
         </label>
         {clientError ? (
           <p role="alert" className="text-sm text-danger">
@@ -149,11 +172,9 @@ export function UploadDialog({ open, onOpenChange }: { open: boolean; onOpenChan
           </div>
         ) : null}
         <DialogFooter>
-          {uploading ? null : (
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-          )}
+          <Button type="button" variant="outline" disabled={uploading} onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
           <Button type="button" disabled={!file || !attested || uploading} onClick={() => void submit()}>
             {uploading ? "Uploading..." : "Upload"}
           </Button>

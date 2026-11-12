@@ -119,7 +119,7 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
   return (
     <div className="space-y-4 pb-24">
       <div className="space-y-2">
-        <Link href="/referrals" className="text-sm text-primary">
+        <Link href="/referrals" className="cursor-pointer text-sm font-medium text-primary underline-offset-2 hover:underline">
           Referrals
         </Link>
         <div className="flex flex-wrap items-center gap-3">
@@ -292,7 +292,7 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
         </div>
       </div>
       {status === "needs_review" || (status === "failed" && detail.allowed_actions.includes("reject")) ? (
-        <div className="sticky bottom-0 flex items-center justify-between gap-3 border-t border-border bg-surface px-4 py-3">
+        <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-2 border-t border-border bg-surface px-6 py-3">
           <Button type="button" variant="outline" onClick={() => setRejectOpen(true)} disabled={!detail.allowed_actions.includes("reject")}>
             Reject
           </Button>

@@ -15,6 +15,7 @@ export function ReferenceId({ id, label = "Reference" }: { id: string; label?: s
       <Button
         type="button"
         variant="outline"
+        size="sm"
         onClick={() => {
           void navigator.clipboard.writeText(id).then(() => {
             setCopied(true);
