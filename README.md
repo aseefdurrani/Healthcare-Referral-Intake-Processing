@@ -4,7 +4,7 @@
 
 **Current AI integration:** [OpenAI demo setup and request/response walkthrough](docs/openai-demo.md). The earlier Bedrock design in `Agent Directions/AGENT_F_AI_PROCESSING.md` is historical; Bedrock model authorization blocked live invocation in this account. Its adapter remains in the repository but is not wired into the running demo. The user's November 11 decision supersedes the original provider choice for this synthetic-only demo.
 
-**S3 encryption decision (November 11, 2026):** The November 3 design chose SSE-KMS with the AWS-managed key `aws/s3` and an S3 Bucket Key. That choice made the referral bucket part of component H, and CloudTrail event history could show which role used the key, without a customer-managed key or its monthly fee and lockout risk. The accepted limit was that `aws/s3` cannot be scoped to one role, so IAM remained the access gate. That original desire stays in `Agent Directions/AGENT_H_ENCRYPTION.md`. This synthetic demo uses S3's built-in SSE-S3 (`AES256`, S3-managed keys). `HeadObject` must report `AES256`. RDS storage encryption with `aws/rds` is unchanged.
+**S3 encryption decision (November 11, 2026):** The November 3 design chose SSE-KMS with the AWS-managed key `aws/s3` and an S3 Bucket Key. That choice made the referral bucket part of component H, and CloudTrail event history could show which role used the key, without a customer-managed key or its monthly fee and lockout risk. The accepted limit was that `aws/s3` cannot be scoped to one role, so IAM remained the access gate. That original desire stays in `Agent Directions/AGENT_H_ENCRYPTION.md`. This synthetic demo uses S3's built-in SSE-S3 (`AES256`, S3-managed keys). `HeadObject` must report `AES256`. If RDS is provisioned in a fuller implementation, its storage-encryption design remains AWS KMS `aws/rds`.
 
 > **Source-of-truth priority:** This README defines the agreed product goals, nine-component stack, non-negotiable scope, and constraints. Each finalized `AGENT_*.md` document adds the approved decisions for its respective component. Where two direction files conflict, flag the conflict for a user decision—do not silently choose. Discovery prompts are instructions, **not** finalized architectural decisions.
 
@@ -33,7 +33,7 @@ Build a **staff-facing AI Healthcare Referral Intake Copilot** that accepts a sy
 6. FastAPI validates results using deterministic rules and flags missing or conflicting details.
 7. PostgreSQL records the referral, document reference, suggestions, review status, and decisions.
 8. Next.js displays an intelligible intake/review experience; the staff member remains responsible for approval.
-9. CloudWatch and CloudTrail support operational visibility and AWS activity auditing, while the application maintains any needed staff-level review audit record.
+9. The application maintains safe operational logs and a staff-level review audit record. A fuller implementation could add CloudWatch and CloudTrail for operational visibility and AWS activity auditing.
 
 **Design principles:** Patient safety and correctness first; evidence and uncertainty visible to reviewers; minimal cloud spend; professional enterprise UI; maintainable, typed contracts; clear separation of concerns; secure-by-default behavior; **good engineering, not overengineering**.
 
@@ -44,14 +44,14 @@ Build a **staff-facing AI Healthcare Referral Intake Copilot** that accepts a sy
 | A | Frontend | **Next.js** | Staff dashboard, upload/preview, referrals, flags, review/approval |
 | B | Backend | **Python + FastAPI** | API, orchestration, deterministic validation, authorization, status transitions |
 | C | Document storage | **Amazon S3** | Private storage for original referral files |
-| D | Database | **PostgreSQL + Amazon RDS** | Referral, field, document, run, and review records |
+| D | Database | **Local PostgreSQL (demo); Amazon RDS (proposed)** | Referral, field, document, run, and review records |
 | E | OCR | **Amazon Textract** | Read text/forms/layout from referral documents |
 | F | AI processing | **OpenAI Responses API (demo)** | Structure Textract text and suggest a medical specialty; Bedrock adapter retained inactive |
 | G | Authentication/access | **Amazon Cognito** | One pre-created demo staff login; backend authorizes access |
-| H | Encryption/key management | **SSE-S3 for the document bucket; AWS KMS `aws/rds` for RDS** | S3 uses built-in SSE-S3 (`AES256`). RDS storage encryption stays on the AWS-managed `aws/rds` key |
-| I | Observability/auditing | **CloudWatch + CloudTrail** | Application health, workflow failures, AWS API activity |
+| H | Encryption/key management | **SSE-S3 for the document bucket; AWS KMS `aws/rds` for proposed RDS** | S3 uses built-in SSE-S3 (`AES256`). A future RDS instance would use the AWS-managed `aws/rds` key |
+| I | Observability/auditing | **Application logs and review history (demo); CloudWatch + CloudTrail (proposed)** | Application health, workflow failures, AWS API activity |
 
-**Encryption precision:** The active document bucket uses **SSE-S3** (`AES256`), S3's built-in server-side encryption with S3-managed keys. The November 3 choice, SSE-KMS with `aws/s3` and a Bucket Key, remains the original desire in component H. RDS at rest stays encrypted with `aws/rds`. HTTPS/TLS is a separate in-transit requirement.
+**Encryption precision:** The active document bucket uses **SSE-S3** (`AES256`), S3's built-in server-side encryption with S3-managed keys. The November 3 choice, SSE-KMS with `aws/s3` and a Bucket Key, remains the original desire in component H. A future RDS instance would be encrypted at rest with `aws/rds`. HTTPS/TLS is a separate in-transit requirement.
 
 ## 4. MVP boundaries
 
@@ -62,6 +62,8 @@ Build a **staff-facing AI Healthcare Referral Intake Copilot** that accepts a sy
 **Production caution:** A real-PHI deployment would need an appropriate AWS/other-vendor BAA arrangement, HIPAA/security and privacy risk analysis, service/configuration review, least privilege, organizational policies and procedures, incident response, retention, legal/compliance review, and validation with healthcare professionals. An AWS service or encryption toggle alone does **not** make the system HIPAA-compliant. **Never put real patient information into this MVP, Cursor chats, sample files, logs, or prompts.**
 
 ## 5. Conceptual integration flow
+
+**Updated architecture views:** [System design](system%20design.md) separates the implemented demo from a possible full application with EHR intake, RDS/KMS, CloudWatch, CloudTrail, Bedrock, and post-approval specialty routing. The diagram below is the original conceptual sketch; it should not be read as a deployment inventory.
 
 ```mermaid
 flowchart LR
@@ -81,7 +83,7 @@ flowchart LR
     S3 -.->|auditable AWS activity where configured| Trail[CloudTrail]
 ```
 
-**Diagram caveat:** The document bucket uses SSE-S3 (`AES256`). KMS in this diagram is RDS storage encryption with `aws/rds`. The November 3 design also recorded SSE-KMS (`aws/s3` and a Bucket Key) for the bucket; that original desire is in component H. CloudTrail coverage varies by event type; S3 object-level data events need an explicit decision. This diagram is logical architecture, not a finalized network/deployment diagram.
+**Diagram caveat:** The demo uses local PostgreSQL and OpenAI; RDS/KMS, CloudWatch, and CloudTrail in this original sketch are future integrations, not fully implemented demo services. The document bucket uses SSE-S3 (`AES256`); KMS `aws/rds` would apply to RDS storage, not the bucket. The November 3 design also recorded SSE-KMS (`aws/s3` and a Bucket Key) for the bucket; that original desire is in component H. CloudTrail coverage varies by event type, and S3 object-level data events need explicit configuration. This is a logical sketch, not a finalized network/deployment diagram.
 
 **Critical contract rules:**
 
