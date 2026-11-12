@@ -1,6 +1,6 @@
 # AGENT D — Database (PostgreSQL on Amazon RDS)
 
-> **November 11, 2026 amendment:** The active synthetic demo uses direct OpenAI. Migration `0003_openai_demo` renames `processing_runs.bedrock_model_id` to `model_id`, preserving historical values, and adds `ai_runs.provider_request_id`. The original schema description below is historical where it names Bedrock; see `docs/openai-demo.md` for the active flow.
+> **November 11, 2026 amendment:** The active synthetic demo uses direct OpenAI. Migration `0003_openai_demo` renames `processing_runs.bedrock_model_id` to `model_id`, preserving historical values, and adds `ai_runs.provider_request_id`. The original schema description below is historical where it names Bedrock; see `docs/openai-demo.md` for the active flow. Document encryption for the active demo is SSE-S3: store the algorithm `HeadObject` returns, and the expected `sse_algorithm` is `AES256`. The November 3 expected value `aws:kms` is the original decision in `AGENT_H_ENCRYPTION.md`. See `README.md`.
 
 | Field | Value |
 |:--|:--|
@@ -145,7 +145,7 @@ The owner accepted the schema outline and marked the direction final. The items 
 | B sketched one processing table. E and F sketched `ocr_runs` and `ai_runs`. | **All three (U3, U6).** |
 | H says every connection uses `verify-full` and the process must refuse any other mode. | **Exception for `localhost` and `127.0.0.1` only (U7).** Any other host with a different mode refuses to start. |
 | Older frontend sketches used `ready_for_review` and `needs_more_info`. | The database stores B's status values. `needs_more_info` is not a status. The UI maps `needs_review` to the "Ready for review" chip. |
-| C expected `sse_algorithm` to be `AES256`. H later selected SSE-KMS (`aws:kms`). | Store the algorithm **HeadObject returns**. The expected demo value is `aws:kms`. |
+| C expected `sse_algorithm` to be `AES256`. H later selected SSE-KMS (`aws:kms`). | Store the algorithm **HeadObject returns**. The November 3 expected value was `aws:kms`. The November 11 demo expects `AES256`. |
 | E asked for `s3_version_id` on the document. C turned S3 versioning off. | Column exists and **stays null**. |
 | B's field sketch has `confidence`. F has no numeric model score. | **No confidence column (R9).** |
 | B proposed a `DATABASE_URL` secret. H listed split variables. | **Split variables are canonical (R10).** |
@@ -293,7 +293,7 @@ Exactly one row per referral. Column set required by C, plus E's nullable versio
 | `page_count` | `integer` | yes | Null while `storing`. Otherwise 1 through 10 |
 | `sha256_hex` | `char(64)` | yes | Lowercase hex when set. Indexed, **not unique** |
 | `s3_etag` | `text` | yes | |
-| `sse_algorithm` | `text` | yes | Expected demo value `aws:kms` |
+| `sse_algorithm` | `text` | yes | Expected demo value `AES256` (November 11 SSE-S3). The November 3 value was `aws:kms` |
 | `original_filename` | `text` | no | 1 to 255 characters. Display only. Never logged |
 | `storage_status` | `text` | no | `storing`, `stored`, `storage_failed` |
 | `storage_error_code` | `text` | yes | |

@@ -1,6 +1,6 @@
 # AGENT I — Observability and Audit (Amazon CloudWatch + AWS CloudTrail)
 
-> **November 11, 2026 amendment:** For the active synthetic demo, AI calls go directly to OpenAI, not Bedrock. `ai.*` events record the model and safe `provider_request_id`; OpenAI requests are not AWS CloudTrail Bedrock events. CloudTrail remains relevant to S3 and Textract. The earlier Bedrock tracing examples below are historical; see `docs/openai-demo.md`.
+> **November 11, 2026 amendment:** For the active synthetic demo, AI calls go directly to OpenAI, not Bedrock. `ai.*` events record the model and safe `provider_request_id`; OpenAI requests are not AWS CloudTrail Bedrock events. CloudTrail remains relevant to S3 and Textract. The earlier Bedrock tracing examples below are historical; see `docs/openai-demo.md`. The document bucket uses SSE-S3 (`AES256`). The November 3 resolution that the bucket is SSE-KMS with `aws/s3` and a Bucket Key, so event history can show KMS use, is the original desire in `AGENT_H_ENCRYPTION.md`. The trail log bucket stays SSE-S3. See `README.md`.
 
 | Item | Value |
 |:--|:--|

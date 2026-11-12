@@ -4,6 +4,8 @@
 
 **Current AI integration:** [OpenAI demo setup and request/response walkthrough](docs/openai-demo.md). The earlier Bedrock design in `Agent Directions/AGENT_F_AI_PROCESSING.md` is historical; Bedrock model authorization blocked live invocation in this account. Its adapter remains in the repository but is not wired into the running demo. The user's November 11 decision supersedes the original provider choice for this synthetic-only demo.
 
+**S3 encryption decision (November 11, 2026):** The November 3 design chose SSE-KMS with the AWS-managed key `aws/s3` and an S3 Bucket Key. That choice made the referral bucket part of component H, and CloudTrail event history could show which role used the key, without a customer-managed key or its monthly fee and lockout risk. The accepted limit was that `aws/s3` cannot be scoped to one role, so IAM remained the access gate. That original desire stays in `Agent Directions/AGENT_H_ENCRYPTION.md`. This synthetic demo uses S3's built-in SSE-S3 (`AES256`, S3-managed keys). `HeadObject` must report `AES256`. RDS storage encryption with `aws/rds` is unchanged.
+
 > **Source-of-truth priority:** This README defines the agreed product goals, nine-component stack, non-negotiable scope, and constraints. Each finalized `AGENT_*.md` document adds the approved decisions for its respective component. Where two direction files conflict, flag the conflict for a user decision—do not silently choose. Discovery prompts are instructions, **not** finalized architectural decisions.
 
 ## 1. What problem are we addressing?
@@ -46,10 +48,10 @@ Build a **staff-facing AI Healthcare Referral Intake Copilot** that accepts a sy
 | E | OCR | **Amazon Textract** | Read text/forms/layout from referral documents |
 | F | AI processing | **OpenAI Responses API (demo)** | Structure Textract text and suggest a medical specialty; Bedrock adapter retained inactive |
 | G | Authentication/access | **Amazon Cognito** | One pre-created demo staff login; backend authorizes access |
-| H | Encryption/key management | **AWS KMS and supported AWS encryption** | Manage encryption where KMS is used; configure S3/RDS at-rest protection |
+| H | Encryption/key management | **SSE-S3 for the document bucket; AWS KMS `aws/rds` for RDS** | S3 uses built-in SSE-S3 (`AES256`). RDS storage encryption stays on the AWS-managed `aws/rds` key |
 | I | Observability/auditing | **CloudWatch + CloudTrail** | Application health, workflow failures, AWS API activity |
 
-**Encryption precision:** S3's default **SSE-S3** is server-side encryption but is **not the same as SSE-KMS**. The final S3/RDS/KMS choices must be reconciled across C, D and H. HTTPS/TLS is a separate in-transit requirement.
+**Encryption precision:** The active document bucket uses **SSE-S3** (`AES256`), S3's built-in server-side encryption with S3-managed keys. The November 3 choice, SSE-KMS with `aws/s3` and a Bucket Key, remains the original desire in component H. RDS at rest stays encrypted with `aws/rds`. HTTPS/TLS is a separate in-transit requirement.
 
 ## 4. MVP boundaries
 
@@ -65,7 +67,7 @@ Build a **staff-facing AI Healthcare Referral Intake Copilot** that accepts a sy
 flowchart LR
     Staff[Authorized staff] --> UI[Next.js]
     UI -->|authenticated API| API[FastAPI]
-    API --> S3[(Private S3)]
+    API --> S3[(Private S3 SSE-S3)]
     API --> TXT[Textract OCR]
     TXT --> API
     API --> LLM[OpenAI extraction + specialty suggestion]
@@ -74,13 +76,12 @@ flowchart LR
     API -->|review results| UI
     UI -->|staff decision| API
     Cognito[Cognito] -.->|tokens verified| API
-    KMS[KMS / service encryption] -.-> S3
-    KMS -.-> DB
+    KMS[KMS aws/rds] -.-> DB
     API -.-> Logs[CloudWatch]
     S3 -.->|auditable AWS activity where configured| Trail[CloudTrail]
 ```
 
-**Diagram caveat:** The KMS-to-S3 relationship applies **only if SSE-KMS is chosen**; S3 may instead use SSE-S3. CloudTrail coverage varies by event type; S3 object-level data events need an explicit decision. This diagram is logical architecture, not a finalized network/deployment diagram.
+**Diagram caveat:** The document bucket uses SSE-S3 (`AES256`). KMS in this diagram is RDS storage encryption with `aws/rds`. The November 3 design also recorded SSE-KMS (`aws/s3` and a Bucket Key) for the bucket; that original desire is in component H. CloudTrail coverage varies by event type; S3 object-level data events need an explicit decision. This diagram is logical architecture, not a finalized network/deployment diagram.
 
 **Critical contract rules:**
 
@@ -112,7 +113,7 @@ repo/
 # backend/        FastAPI app and AWS service adapters
 ```
 
-**Phase 1 — Discover and decide (historical):** The component direction files record the original planning decisions. The November 11 AI demo decision above supersedes the earlier Bedrock provider choice.
+**Phase 1 — Discover and decide (historical):** The component direction files record the original planning decisions. The November 11 AI demo decision above supersedes the earlier Bedrock provider choice. The same day's S3 decision uses SSE-S3; the November 3 SSE-KMS design stays in component H.
 
 **Phase 2 — Implement:** The user authorized the direct OpenAI demo implementation on November 11, 2026. The README and [demo walkthrough](docs/openai-demo.md) describe the active architecture. Cloud deployment and real-PHI processing remain separate future work.
 

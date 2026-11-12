@@ -1,5 +1,7 @@
 # AGENT C — Document Storage (Amazon S3)
 
+> **November 11, 2026 amendment:** The active document bucket uses SSE-S3 (`AES256`). November 3 decision U6 chose SSE-KMS with `aws/s3` and a Bucket Key so this bucket matched H; that original desire stays in `AGENT_H_ENCRYPTION.md` and in the sections below. For this demo, do not apply the SSE-KMS bucket default, the deny-non-KMS policy, or the `aws:kms` HeadObject checks below. The expected stored `sse_algorithm` is `AES256`. RDS is unchanged. See `README.md`.
+
 | Field | Value |
 |:--|:--|
 | Component | **C — Document storage** (Amazon S3) |

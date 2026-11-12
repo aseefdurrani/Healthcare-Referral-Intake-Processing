@@ -58,7 +58,7 @@ def checksum_matches(sha256_hex: str, checksum_b64: str | None) -> bool:
 
 
 def encryption_ok(head: ObjectHead) -> bool:
-    return head.sse == "aws:kms" and head.bucket_key
+    return head.sse == "AES256"
 
 
 def _request_id(response: dict[str, Any]) -> str | None:
@@ -92,7 +92,7 @@ class ObjectStore(Protocol):
 
 
 class S3Storage:
-    """One reused S3 client. The bucket default supplies SSE-KMS."""
+    """One reused S3 client. The bucket default supplies SSE-S3."""
 
     def __init__(self, client: Any, bucket: str) -> None:
         self._client = client

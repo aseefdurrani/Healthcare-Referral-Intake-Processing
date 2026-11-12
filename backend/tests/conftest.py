@@ -21,7 +21,7 @@ os.environ.update(
         "AWS_REGION": "us-east-2",
         "LOG_LEVEL": "INFO",
         "LOG_SINK": "stdout",
-        "S3_SSE_MODE": "aws:kms",
+        "S3_SSE_MODE": "AES256",
         "DB_HOST": "127.0.0.1",
         "DB_PORT": "5432",
         "DB_NAME": "intake",

@@ -1,4 +1,4 @@
-"""Put an object once and require the bucket's SSE-KMS default."""
+"""Put an object once and require the bucket's SSE-S3 default."""
 
 from __future__ import annotations
 

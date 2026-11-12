@@ -1,5 +1,7 @@
 # AGENT_A_FRONTEND — Frontend (Next.js) Direction
 
+> **November 11, 2026 amendment:** The backend stores uploads with S3's built-in SSE-S3 (`AES256`). The November 3 SSE-KMS wording below is the original desire in `AGENT_H_ENCRYPTION.md`. The frontend still does not talk to KMS or S3 directly. See `README.md`.
+
 | | |
 |:--|:--|
 | **Component** | A — Frontend (Next.js), future location `frontend/` |
@@ -928,7 +930,7 @@ Illustrative field groups. **F and D own the final list.**
 
 ### 5.4 Upload and preview
 
-- **Upload:** one multipart request to `/api/backend/referrals`. The client checks type and size for UX only. FastAPI checks the signature, type, 10,000,000-byte cap, and 10-page cap, then stores the file in S3 with SSE-KMS.
+- **Upload:** one multipart request to `/api/backend/referrals`. The client checks type and size for UX only. FastAPI checks the signature, type, 10,000,000-byte cap, and 10-page cap, then stores the file in S3 with SSE-S3 (`AES256`). The November 3 text said SSE-KMS.
 - Upload progress is indeterminate. The `Idempotency-Key` stops a retry after an unknown outcome from creating a duplicate referral.
 - **Preview:** fetch the document through `/api/backend`, wrap it in a `Blob` and an object URL, render PDFs with `react-pdf` and images with `<img>`, draw highlight boxes from `bbox`, and revoke the object URL on unmount. Never write the bytes to browser storage.
 - Load `DocumentViewer` client-only (`next/dynamic` with `ssr: false`).

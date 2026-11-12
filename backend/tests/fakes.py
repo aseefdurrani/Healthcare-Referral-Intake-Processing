@@ -17,7 +17,7 @@ from app.ai.contracts import AiRunResult
 
 
 class MemoryStorage:
-    def __init__(self, *, sse: str = "aws:kms", bucket_key: bool = True) -> None:
+    def __init__(self, *, sse: str = "AES256", bucket_key: bool = False) -> None:
         self.objects: dict[str, dict[str, Any]] = {}
         self.sse = sse
         self.bucket_key = bucket_key

@@ -1,5 +1,7 @@
 # AGENT_E_OCR — OCR Direction (Amazon Textract)
 
+> **November 11, 2026 amendment:** The active document bucket uses SSE-S3 (`AES256`). Textract still reads the object with the caller's S3 permissions. The November 3 text below that names SSE-KMS, `aws/s3`, and a Bucket Key is the original desire in `AGENT_H_ENCRYPTION.md`. Do not add `kms:Decrypt` for this demo. See `README.md`.
+
 | | |
 |:--|:--|
 | **Component** | E — OCR / document reading layer |

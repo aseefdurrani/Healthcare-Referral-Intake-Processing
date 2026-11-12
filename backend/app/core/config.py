@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     log_sink: Literal["stdout", "cloudwatch"] = "stdout"
     s3_bucket_name: str = ""
-    s3_sse_mode: Literal["aws:kms"] = "aws:kms"
+    s3_sse_mode: Literal["AES256"] = "AES256"
 
     db_host: str = "127.0.0.1"
     db_port: int = Field(default=5432, ge=1, le=65535)

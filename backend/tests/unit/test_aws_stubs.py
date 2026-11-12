@@ -60,8 +60,7 @@ def test_put_uses_if_none_match_and_checksum_without_sse_headers() -> None:
         "head_object",
         {
             "ETag": '"abc"',
-            "ServerSideEncryption": "aws:kms",
-            "BucketKeyEnabled": True,
+            "ServerSideEncryption": "AES256",
             "ChecksumSHA256": base64.b64encode(digest).decode("ascii"),
             "ContentLength": len(body),
             "ResponseMetadata": {"RequestId": "req-2"},
@@ -78,8 +77,8 @@ def test_put_uses_if_none_match_and_checksum_without_sse_headers() -> None:
         sha256_hex=digest.hex(),
     )
     stubber.assert_no_pending_responses()
-    assert head.sse == "aws:kms"
-    assert head.bucket_key is True
+    assert head.sse == "AES256"
+    assert head.bucket_key is False
 
 
 def test_textract_paginates_and_reuses_the_client_token() -> None:

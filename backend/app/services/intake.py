@@ -167,7 +167,7 @@ def create_referral(
     document.size_bytes = accepted.size_bytes
     document.page_count = accepted.page_count
     document.s3_etag = head.etag or "stored"
-    document.sse_algorithm = "aws:kms"
+    document.sse_algorithm = head.sse
     document.stored_at = stored
     document.updated_at = stored
     session.commit()
@@ -300,7 +300,7 @@ def reconcile_storing(
         document.size_bytes = accepted.size_bytes
         document.page_count = accepted.page_count
         document.s3_etag = head.etag or "stored"
-        document.sse_algorithm = "aws:kms"
+        document.sse_algorithm = head.sse
         document.stored_at = now
         document.updated_at = now
         session.commit()

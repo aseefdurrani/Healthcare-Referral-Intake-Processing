@@ -631,8 +631,9 @@ def test_matching_replay_is_stored() -> None:
         sha256=digest,
         sha256_hex=digest.hex(),
     )
-    assert head.bucket_key is True
-    storage.sse = "AES256"
+    assert head.sse == "AES256"
+    assert head.bucket_key is False
+    storage.sse = "aws:kms"
     with pytest.raises(StorageError) as caught:
         write_once(
             storage,

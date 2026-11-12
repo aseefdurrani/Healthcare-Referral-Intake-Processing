@@ -1,5 +1,7 @@
 # AGENT_B_BACKEND — Backend direction (Python + FastAPI)
 
+> **November 11, 2026 amendment:** `S3_SSE_MODE` for the active demo is `AES256` (SSE-S3). `HeadObject` must report `ServerSideEncryption=AES256`. The November 3 value `aws:kms`, with `alias/aws/s3` and a Bucket Key, is the original decision in `AGENT_H_ENCRYPTION.md`. See `README.md`.
+
 | | |
 |:--|:--|
 | **Component** | B — Backend / Python + FastAPI |
@@ -651,7 +653,7 @@ AWS service mocking uses `botocore.stub.Stubber` (ships with botocore) — no `m
 | `AWS_REGION` | `us-east-2` | Single project Region |
 | `AWS_PROFILE` | `<your-aws-login-profile>` | Local only; standard SDK variable; unset on ECS |
 | `S3_BUCKET_NAME` | `<private-referrals-bucket>` | Per C |
-| `S3_SSE_MODE` | `aws:kms` | Bucket default is SSE-KMS with `alias/aws/s3` and a Bucket Key (H). PutObject may omit the encryption header. Do not set a customer managed key. |
+| `S3_SSE_MODE` | `AES256` | Active demo: bucket default is SSE-S3. PutObject may omit the encryption header. The November 3 placeholder was `aws:kms` with `alias/aws/s3` and a Bucket Key (H). Do not set a customer managed key. |
 | `TEXTRACT_FEATURE_TYPES` | `LAYOUT,FORMS,TABLES` | E |
 | `BEDROCK_MODEL_ID` | `<model-or-inference-profile-id>` | Per F |
 | `BEDROCK_READ_TIMEOUT_SECONDS` | `120` | First schema compile can take about 90 seconds |
@@ -805,7 +807,7 @@ Root `.gitignore` does not exist yet. Before creating `backend/.env`, the build 
   - `s3:PutObject` and `s3:GetObject` on C's key prefix only. No `s3:DeleteObject` (cleanup is the admin command in C). Raw OCR objects use C's `ocr/` prefix.
   - `textract:StartDocumentAnalysis`, `textract:GetDocumentAnalysis`;
   - `bedrock:InvokeModel` on the specific model/inference-profile ARN;
-  - **No `kms:*` statements.** H: the AWS managed key `aws/s3` authorizes use through S3. Before OCR, `HeadObject` must report `ServerSideEncryption=aws:kms`.
+  - **No `kms:*` statements.** The November 3 H design authorized `aws/s3` through S3. The active demo uses SSE-S3. Before OCR, `HeadObject` must report `ServerSideEncryption=AES256`.
   - For the local demo, the backend runs with the developer's own (broader) credentials — a known demo limitation. H decides whether a scoped role is assumed locally instead.
 - Secrets: none in code, Git or Markdown. `.env` local only.
 

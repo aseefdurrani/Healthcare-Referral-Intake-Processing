@@ -1,5 +1,7 @@
 # AGENT H — Encryption / AWS KMS Direction
 
+> **November 11, 2026 amendment:** U3's S3 half is the original desire. SSE-KMS with the AWS-managed key `aws/s3` and a Bucket Key made the referral bucket KMS-backed, and CloudTrail event history could show which role used that key, for about no monthly key fee. Customer-managed keys stayed out: about $1/month per key, a key policy, lockout risk, and RDS becoming unavailable if a key is disabled. The accepted limit remains that `aws/s3` cannot be scoped to one role, so IAM is the access gate. For this synthetic demo the document bucket uses S3's built-in SSE-S3. `HeadObject` must report `ServerSideEncryption=AES256`. New objects have no Bucket Key and no `aws/s3` key id. Do not apply the SSE-KMS bucket default, recommendation R2 (deny a put that names a non-KMS encryption type), or the `aws:kms` HeadObject check in the sections below. RDS storage encryption with `aws/rds`, TLS-only access, and no customer-managed keys stay in force. See `README.md`.
+
 | Field | Value |
 |:--|:--|
 | **Component** | H — Encryption and key management (AWS KMS with supported AWS service encryption) |

@@ -9,6 +9,8 @@
 | **Region** | `us-east-2` (Ohio), as recorded in the direction files |
 | **Data** | Synthetic referral and patient data only |
 
+> **November 11, 2026 amendment:** The active document bucket uses S3's built-in SSE-S3 (`AES256`). The November 3 plan chose SSE-KMS with the AWS-managed key `aws/s3` and a Bucket Key so the bucket would be KMS-backed and CloudTrail could show which role used that key, without a customer-managed key. That original desire stays in `AGENT_H_ENCRYPTION.md`. For this demo, do not apply the SSE-KMS bucket default, the deny-non-KMS policy, or a `HeadObject` check for `aws:kms`. RDS encryption with `aws/rds` is unchanged. See `README.md`.
+
 Future implementation agents start only after the owner approves this plan. Each later step that installs packages, creates files, or calls AWS still needs a fresh approval. Read this file and the `AGENT_*.md` sections named on the task. Stop at that task's acceptance check.
 
 ---
@@ -47,7 +49,7 @@ Nine components, one deployable application. The browser talks only to Next.js. 
 | E | OCR | Textract async `StartDocumentAnalysis` | `OcrDocumentV1`, highlight boxes, readability tiers |
 | F | Interpretation | Bedrock Converse, Claude Sonnet 5.5 | Schema-constrained extraction and specialty suggestion |
 | G | Sign-in | Cognito Essentials, managed login | One pre-created staff user; FastAPI allow-lists their `sub` |
-| H | Encryption | AWS-managed `aws/s3` and `aws/rds` | SSE-KMS with a Bucket Key; RDS encryption at creation; TLS |
+| H | Encryption | SSE-S3 on the document bucket; AWS-managed `aws/rds` for RDS | Bucket default `AES256`; RDS encryption at creation; TLS. November 3 SSE-KMS (`aws/s3`, Bucket Key) is the original desire |
 | I | Operations | CloudWatch, CloudTrail, one budget | Redacted logs, 11 metrics, 5 alarms, S3 data events |
 
 ```mermaid
@@ -157,7 +159,7 @@ Components B, C, D, E, F. AWS clients are botocore `Stubber`s or in-memory fakes
 |:--|:--|:--|
 | 3.1 | Publish the OpenAPI document for the routes in **Shared integration contracts**. This unblocks Phase 4. | `GET /openapi.json` matches those routes |
 | 3.2 | Upload validation in memory, in C §6 order, before any database insert or `PutObject`. Magic bytes, `pypdf` page count, encryption, XFA, 10,000,000 bytes, 10 pages. | C fixture cases F2 return B's HTTP codes and create no row |
-| 3.3 | Upload success path: one transaction inserts referral, document (`storing`), run (`queued`), and `uploaded`; then `PutObject` with `IfNoneMatch="*"` and `ChecksumSHA256` and no SSE headers; `HeadObject` must show `aws:kms` and `BucketKeyEnabled`. Keys are C's two templates only. | Fake S3: 202, opaque key, duplicate warning, idempotency cases in B §9 step 6 |
+| 3.3 | Upload success path: one transaction inserts referral, document (`storing`), run (`queued`), and `uploaded`; then `PutObject` with `IfNoneMatch="*"` and `ChecksumSHA256` and no SSE headers; `HeadObject` must show `AES256`. Keys are C's two templates only. The November 3 check for `aws:kms` and `BucketKeyEnabled` is the original SSE-KMS desire. | Fake S3: 202, opaque key, duplicate warning, idempotency cases in B §9 step 6 |
 | 3.4 | In-process runner: `ThreadPoolExecutor(max_workers=2)`, startup recovery, persist guard, 300 s yield, max 3 attempts. | B §9 step 7 fake-pipeline tests pass |
 | 3.5 | OCR adapter: async analysis only, E's `ClientRequestToken` and `JobTag`, poll every 3 s, 180 s yield keeps the referral `processing`, normalize to `OcrDocumentV1`, gzip raw JSON to the `ocr/` key. | Stubber covers pagination, same token on retry, and resume |
 | 3.6 | AI adapter: prompt and schema copied verbatim from F §9 and §10.1, Converse structured output, one repair call, grounding checks. `AI_ENABLED=false` skips the model and opens review. | F checklist items 2–4 and 6 pass offline |
@@ -187,7 +189,7 @@ Create resources only after task 0.2. Use CloudFormation in `infra/cloudformatio
 | ID | Stack or action | Work | Done when |
 |:--|:--|:--|:--|
 | 5.1 | `cortrucent-monthly-cost` | Budget at $10 with alerts at 50% actual, 100% actual, and 100% forecast. Needs `ALERT_EMAIL`. | `describe-budget` shows the three notifications |
-| 5.2 | `cortrucent-demo-storage` | C §10.1–§10.2. Account-regional bucket name. SSE-KMS `aws/s3`, Bucket Key, BPA, the bucket policy in C §7. | C tests S1–S5 pass |
+| 5.2 | `cortrucent-demo-storage` | C §10.1–§10.2. Account-regional bucket name. SSE-S3 (`AES256`), BPA, and the bucket policy in C §7 except the November 3 deny-non-KMS statement. The November 3 step specified SSE-KMS `aws/s3` and a Bucket Key. | C tests S1–S5 pass |
 | 5.3 | Account BPA | All four Block Public Access settings, with explicit approval. | S2 includes the account configuration |
 | 5.4 | `cortrucent-demo-auth` | Pool, prefix domain (`ManagedLoginVersion` 2), public app client. Settings are G §5.1–§5.2. | Pool tier is `ESSENTIALS`; client has no secret |
 | 5.5 | Console, once | Branding from `Company Data/`, then the one staff user by G §7. Password stays in a password manager. Copy `sub` into `ALLOWED_STAFF_SUB`. | G tests M1–M3 pass on localhost |
@@ -464,7 +466,7 @@ CP1–CP4 are local. CP5 is the first paid storage call. CP6 is the first Textra
 
 ### Phase 5
 
-- Anonymous GET of an object returns 403. Bucket encryption is `aws:kms` with a Bucket Key and no customer key id.
+- Anonymous GET of an object returns 403. Bucket encryption is SSE-S3 (`AES256`) and no customer key id. The November 3 check expected `aws:kms` with a Bucket Key.
 - A write without `If-None-Match` is denied.
 - Cognito self-sign-up and `GET /api/auth/sign-up` are rejected.
 - Tokens are HttpOnly and absent from browser storage.
@@ -537,7 +539,7 @@ Add these as the feature lands, not as a later hardening pass.
 | Phase 2 | Least-privilege database role, append-only audit, frozen suggestions, TLS startup rule |
 | Phase 3 | Upload checks before storage, opaque keys, no filename in object metadata, optimistic concurrency |
 | Phase 4 | HttpOnly session, no Cognito values in the browser bundle, CSP, plain-text rendering of extracted text, synthetic-data banner |
-| Phase 5 | Private bucket, TLS-only policy, write-once keys, SSE-KMS default, Cognito Essentials, single-`sub` allow list |
+| Phase 5 | Private bucket, TLS-only policy, write-once keys, SSE-S3 default (`AES256`), Cognito Essentials, single-`sub` allow list. November 3 had specified an SSE-KMS default |
 | Phase 6 | `HeadObject` encryption check before OCR. Bedrock invocation logging stays off. AI data-use opt-out already on |
 | Phase 7 | Approval gate enforced only on the server. Document bytes in memory only |
 | Phase 8 | CloudWatch shipping, S3 data-event trail, alarms, budget already in place from 5.1 |
@@ -625,7 +627,7 @@ The laptop application uses the owner's `aws login` session (C U15). The restric
 
 **Checkpoint CP8, end of Phase 6.**
 
-One designated person, on localhost, signs in, uploads one synthetic one- or two-page PDF, watches it leave `uploaded`, and approves a corrected result. The file is in the private bucket with SSE-KMS. Textract and Bedrock ran once. PostgreSQL holds the referral, the OCR row, the AI row, the fields, and the audit trail. The UI can be the thin Phase 4 screens plus a working approve action. Highlight polish can follow. This milestone is the gate for all further AWS spend beyond a few extra test documents.
+One designated person, on localhost, signs in, uploads one synthetic one- or two-page PDF, watches it leave `uploaded`, and approves a corrected result. The file is in the private bucket with SSE-S3 (`AES256`). The November 3 milestone text said SSE-KMS. Textract and Bedrock ran once. PostgreSQL holds the referral, the OCR row, the AI row, the fields, and the audit trail. The UI can be the thin Phase 4 screens plus a working approve action. Highlight polish can follow. This milestone is the gate for all further AWS spend beyond a few extra test documents.
 
 ### Functional MVP
 
