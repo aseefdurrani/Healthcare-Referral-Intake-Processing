@@ -60,7 +60,7 @@ def create_referral(
     referral_id = uuid.uuid4()
     document_id = uuid.uuid4()
     run_id = uuid.uuid4()
-    key = source_key(referral_id, document_id, accepted.media_type)
+    key = source_key(referral_id, accepted.media_type)
     referral = Referral(
         id=referral_id,
         status="uploaded",

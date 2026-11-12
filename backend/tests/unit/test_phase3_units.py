@@ -15,7 +15,7 @@ from app.adapters.ocr import client_request_token
 from app.schemas.ai import ReferralExtractionV1
 from app.services.files import FileRejected, inspect_upload
 from app.services.grounding import ground
-from app.services.keys import source_key
+from app.services.keys import ocr_key, source_key
 from app.services.ocr_document import normalize, render_for_llm
 from app.services.validation import FieldView, evaluate_rules
 
@@ -31,16 +31,23 @@ def test_client_request_token_is_opaque_and_stable() -> None:
     assert len(token) <= 64
 
 
-def test_source_key_uses_only_the_two_templates() -> None:
+def test_object_keys_use_one_folder_per_referral() -> None:
     import uuid
 
     referral_id = uuid.uuid4()
     document_id = uuid.uuid4()
-    key = source_key(referral_id, document_id, "image/png")
-    assert key.endswith("/source.png")
-    assert "patient" not in key
+    ocr_run_id = uuid.uuid4()
+    later_run_id = uuid.uuid4()
+    source = source_key(referral_id, "image/png")
+    first = ocr_key(referral_id, ocr_run_id)
+    second = ocr_key(referral_id, later_run_id)
+    assert source == f"referrals/{referral_id}/source.png"
+    assert str(document_id) not in source
+    assert first == f"referrals/{referral_id}/ocr/{ocr_run_id}.json.gz"
+    assert second == f"referrals/{referral_id}/ocr/{later_run_id}.json.gz"
+    assert first != second
     with pytest.raises(ValueError):
-        source_key(referral_id, document_id, "image/tiff")
+        source_key(referral_id, "image/tiff")
 
 
 def test_rejected_files_match_the_storage_codes() -> None:

@@ -118,6 +118,25 @@ def _assert_schema(database: Database) -> None:
             )
         }
         assert triggers == EXPECTED_TRIGGERS
+        key_checks = {
+            row[0]
+            for row in conn.execute(
+                text(
+                    """
+                    SELECT conname
+                    FROM pg_constraint
+                    WHERE conname IN (
+                      'documents_s3_key_ck',
+                      'ocr_runs_raw_output_s3_key_ck'
+                    )
+                    """
+                )
+            )
+        }
+        assert key_checks == {
+            "documents_s3_key_ck",
+            "ocr_runs_raw_output_s3_key_ck",
+        }
         functions = {
             row[0]
             for row in conn.execute(
@@ -470,6 +489,94 @@ def test_t7_one_active_processing_run(database: Database) -> None:
         assert isinstance(exc_info.value.orig, UniqueViolation)
 
 
+def test_object_keys_match_the_referral_folder(database: Database) -> None:
+    with _session(database.app_engine) as session:
+        referral = _referral(session)
+        document_id = uuid.uuid4()
+        session.add(
+            Document(
+                id=document_id,
+                referral_id=referral.id,
+                s3_bucket="synthetic-bucket",
+                s3_key=f"referrals/{referral.id}/documents/{document_id}/source.pdf",
+                media_type="application/pdf",
+                original_filename="synthetic.pdf",
+                storage_status="storing",
+                uploaded_by=STAFF_SUB,
+            )
+        )
+        with pytest.raises(IntegrityError) as exc_info:
+            session.flush()
+        assert isinstance(exc_info.value.orig, CheckViolation)
+
+    with _session(database.app_engine) as session:
+        referral = _referral(session)
+        document = Document(
+            id=uuid.uuid4(),
+            referral_id=referral.id,
+            s3_bucket="synthetic-bucket",
+            s3_key=f"referrals/{uuid.uuid4()}/source.pdf",
+            media_type="application/pdf",
+            original_filename="synthetic.pdf",
+            storage_status="storing",
+            uploaded_by=STAFF_SUB,
+        )
+        session.add(document)
+        with pytest.raises(IntegrityError) as exc_info:
+            session.flush()
+        assert isinstance(exc_info.value.orig, CheckViolation)
+
+    with _session(database.app_engine) as session:
+        referral = _referral(session)
+        document = Document(
+            id=uuid.uuid4(),
+            referral_id=referral.id,
+            s3_bucket="synthetic-bucket",
+            s3_key=f"referrals/{referral.id}/source.pdf",
+            media_type="application/pdf",
+            original_filename="synthetic.pdf",
+            storage_status="storing",
+            uploaded_by=STAFF_SUB,
+        )
+        session.add(document)
+        session.flush()
+        run = _run(session, referral)
+        first_id = uuid.uuid4()
+        second_id = uuid.uuid4()
+        session.add(
+            OcrRun(
+                id=first_id,
+                document_id=document.id,
+                referral_id=referral.id,
+                created_by_run_id=run.id,
+                attempt=1,
+                config_version="ocr-v1",
+                feature_types=["LAYOUT", "FORMS", "TABLES"],
+                client_request_token=f"ocr-{document.id.hex}-c1-a1",
+                status="failed",
+                raw_output_s3_key=f"referrals/{referral.id}/ocr/{first_id}.json.gz",
+            )
+        )
+        second = OcrRun(
+            id=second_id,
+            document_id=document.id,
+            referral_id=referral.id,
+            created_by_run_id=run.id,
+            attempt=2,
+            config_version="ocr-v1",
+            feature_types=["LAYOUT", "FORMS", "TABLES"],
+            client_request_token=f"ocr-{document.id.hex}-c1-a2",
+            status="failed",
+            raw_output_s3_key=f"referrals/{referral.id}/ocr/{second_id}.json.gz",
+        )
+        session.add(second)
+        session.flush()
+        second.raw_output_s3_key = f"referrals/{referral.id}/ocr/{uuid.uuid4()}.json.gz"
+        with pytest.raises(IntegrityError) as exc_info:
+            session.flush()
+        assert isinstance(exc_info.value.orig, CheckViolation)
+
+
 def test_t15_purge_removes_one_referral_and_app_cannot_call_it(database: Database) -> None:
     with database.app_engine.connect() as conn:
         with pytest.raises(DBAPIError) as exc_info:
@@ -492,7 +599,7 @@ def test_t15_purge_removes_one_referral_and_app_cannot_call_it(database: Databas
             id=document_id,
             referral_id=referral.id,
             s3_bucket="synthetic-bucket",
-            s3_key=(f"referrals/{referral.id}/documents/{document_id}/source.pdf"),
+            s3_key=f"referrals/{referral.id}/source.pdf",
             media_type="application/pdf",
             original_filename="synthetic.pdf",
             storage_status="storing",

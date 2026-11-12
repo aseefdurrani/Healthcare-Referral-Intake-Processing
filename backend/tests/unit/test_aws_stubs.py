@@ -21,10 +21,7 @@ from app.core.config import Settings
 from app.services.objects import write_once
 
 BUCKET = "referrals-test-bucket"
-KEY = (
-    "referrals/3f6c2a9e-8b1d-4c7a-9e2f-5d4b1a0c7e93/"
-    "documents/a91d4e07-2c5b-4f8e-b3a6-0e7d9c1f2b58/source.pdf"
-)
+KEY = "referrals/3f6c2a9e-8b1d-4c7a-9e2f-5d4b1a0c7e93/source.pdf"
 
 
 def _settings() -> Settings:

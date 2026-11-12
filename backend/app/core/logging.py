@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any, TextIO
 
 from app.core.config import Settings
+from app.services.keys import OBJECT_KEY
 
 SERVICE = "cortrucent-api"
 request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
@@ -30,10 +31,6 @@ _FRAME = re.compile(r"^app/[\w./-]+:\d+ in [A-Za-z_][A-Za-z0-9_]*$")
 _CONTENT_TYPE = re.compile(r"^[a-z]+/[a-z0-9.+-]{1,40}$")
 _AWS_ID = re.compile(r"^[A-Za-z0-9+/_.:-]{1,128}$")
 _MODEL_ID = re.compile(r"^[A-Za-z0-9._:-]{1,120}$")
-_OBJECT_KEY = re.compile(
-    r"^referrals/[0-9a-f-]{36}/documents/[0-9a-f-]{36}/"
-    r"(source\.(pdf|png|jpg)|ocr/[0-9a-f-]{36}/textract-response\.json\.gz)$"
-)
 _VERSION = re.compile(r"^[A-Za-z0-9._+-]{1,80}$")
 
 _METHODS = frozenset({"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"})
@@ -308,7 +305,7 @@ def _accept(kind: str, value: object) -> object | None:
         return value
     if kind == "model_id" and isinstance(value, str) and _MODEL_ID.fullmatch(value):
         return value
-    if kind == "object_key" and isinstance(value, str) and _OBJECT_KEY.fullmatch(value):
+    if kind == "object_key" and isinstance(value, str) and OBJECT_KEY.fullmatch(value):
         return value
     if kind == "confidence" and _is_number(value) and isinstance(value, int | float):
         if 0 <= float(value) <= 100:

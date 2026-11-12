@@ -1,8 +1,10 @@
 """ORM tables for the eight intake records.
 
 Checks, partial indexes, triggers, grants, and ``demo_purge_referral`` live in
-Alembic revision ``0001_initial``. Actor columns store a Cognito ``sub``. There
-is no staff email column and no patient table.
+the Alembic revisions. Actor columns store a Cognito ``sub``. There is no
+staff email column and no patient table. Object keys are one folder per
+referral: ``referrals/<referral-uuid>/source.<ext>`` and
+``referrals/<referral-uuid>/ocr/<ocr-run-uuid>.json.gz``.
 """
 
 from __future__ import annotations

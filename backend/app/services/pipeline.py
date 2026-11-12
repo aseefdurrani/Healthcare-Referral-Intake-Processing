@@ -348,7 +348,7 @@ class Pipeline:
         }
         payload = gzip.compress(json.dumps(raw, separators=(",", ":"), default=str).encode())
         digest = hashlib.sha256(payload).digest()
-        key = ocr_key(document.referral_id, document.id, ocr.id)
+        key = ocr_key(document.referral_id, ocr.id)
         try:
             head = write_once(
                 self.storage,

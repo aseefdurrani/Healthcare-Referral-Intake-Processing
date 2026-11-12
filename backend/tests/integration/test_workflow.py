@@ -611,10 +611,7 @@ def test_matching_replay_is_stored() -> None:
     storage = _Exists()
     body = b"abc"
     digest = hashlib.sha256(body).digest()
-    key = (
-        "referrals/3f6c2a9e-8b1d-4c7a-9e2f-5d4b1a0c7e93/"
-        "documents/a91d4e07-2c5b-4f8e-b3a6-0e7d9c1f2b58/source.pdf"
-    )
+    key = "referrals/3f6c2a9e-8b1d-4c7a-9e2f-5d4b1a0c7e93/source.pdf"
     head = write_once(
         storage,
         key=key,
