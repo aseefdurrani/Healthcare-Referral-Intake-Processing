@@ -9,16 +9,18 @@ import { FieldStatusBadge } from "@/components/referrals/field-status";
 import { fieldValueType, groupFields, PRIORITY_OPTIONS } from "@/lib/catalog";
 import { formatClinicalDate } from "@/lib/format";
 import type { HighlightTarget } from "@/components/referrals/document-viewer";
-import type { ReferralField } from "@/lib/api/types";
+import type { ReferralField, ReferralDetail } from "@/lib/api/types";
 
 export function FieldGroups({
   fields,
+  flags = [],
   readOnly,
   saving,
   onSave,
   onJump,
 }: {
   fields: ReferralField[];
+  flags?: ReferralDetail["flags"];
   readOnly: boolean;
   saving: boolean;
   onSave: (key: string, value: string) => void;
@@ -35,6 +37,7 @@ export function FieldGroups({
           </h3>
           <div className="divide-y divide-border rounded-panel border border-border bg-surface">
             {group.fields.map((field) => {
+              const warnings = flags.filter((flag) => flag.field_key === field.key && flag.status === "open");
               const unreadable = field.readability === "unreadable";
               const missing = !field.effective_value;
               const shown =
@@ -44,7 +47,7 @@ export function FieldGroups({
                     ? formatClinicalDate(field.effective_value ?? "")
                     : field.effective_value;
               return (
-                <div key={field.key} id={`field-${field.key}`} className="space-y-2 px-3 py-2">
+                <div key={field.key} id={`field-${field.key}`} className={`scroll-mt-6 space-y-2 px-3 py-3 ${warnings.length ? "border-l-4 border-l-attention" : ""}`}>
                   <div className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-3">
                     <div>
                       <p className="text-xs font-medium leading-4 text-text-muted">{field.label}</p>
@@ -86,6 +89,9 @@ export function FieldGroups({
                   {field.readability === "unreadable" ? (
                     <p className="text-xs text-danger">Unreadable. This value was left blank.</p>
                   ) : null}
+                  {warnings.filter((flag) => flag.code.toLowerCase() !== "low_confidence_field").map((flag) => (
+                    <p key={flag.id} className="text-xs text-attention">{flag.message}</p>
+                  ))}
                   {field.ocr_value ? <p className="text-sm text-text-muted">Evidence: {field.ocr_value}</p> : null}
                   {field.edited && field.suggested_value ? (
                     <p className="text-sm text-text-muted">Extracted value: {field.suggested_value}</p>

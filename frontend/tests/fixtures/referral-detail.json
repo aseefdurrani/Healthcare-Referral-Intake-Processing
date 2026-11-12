@@ -1,0 +1,628 @@
+{
+  "id": "d279b549-79bb-4d91-a21d-5eccc76c8b95",
+  "status": "needs_review",
+  "version": 4,
+  "created_at": "2026-11-11T21:45:44.165158-05:00",
+  "updated_at": "2026-11-11T22:15:56.151629-05:00",
+  "document": {
+    "id": "30043edc-dba2-43d4-b15b-cd85408bad10",
+    "display_filename": "referral_01.pdf",
+    "content_type": "application/pdf",
+    "size_bytes": 58995,
+    "page_count": 2
+  },
+  "patient_name": "Jordan Ellis",
+  "suggested_specialty": "cardiology",
+  "blocking_flag_count": 0,
+  "warning_flag_count": 1,
+  "possible_duplicate_of": null,
+  "allowed_actions": [
+    "edit",
+    "approve",
+    "reject"
+  ],
+  "fields": [
+    {
+      "key": "patient.full_name",
+      "label": "Patient name",
+      "ocr_value": "Jordan Ellis",
+      "suggested_value": "Jordan Ellis",
+      "confirmed_value": null,
+      "effective_value": "Jordan Ellis",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-l014"
+        ],
+        "bbox": {
+          "left": 0.0733,
+          "top": 0.2079,
+          "width": 0.0789,
+          "height": 0.0099
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "patient.date_of_birth",
+      "label": "Date of birth",
+      "ocr_value": "04/14/1982",
+      "suggested_value": "1982-04-14",
+      "confirmed_value": null,
+      "effective_value": "1982-04-14",
+      "field_status": "normalized",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-l015"
+        ],
+        "bbox": {
+          "left": 0.5198,
+          "top": 0.208,
+          "width": 0.0879,
+          "height": 0.0101
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "patient.phone",
+      "label": "Patient phone",
+      "ocr_value": "\"PHONE NUMBER *\" = \"202-555-0101\"",
+      "suggested_value": "202-555-0101",
+      "confirmed_value": null,
+      "effective_value": "202-555-0101",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv006"
+        ],
+        "bbox": {
+          "left": 0.7348,
+          "top": 0.2075,
+          "width": 0.103,
+          "height": 0.0101
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "patient.email",
+      "label": "Patient email",
+      "ocr_value": null,
+      "suggested_value": null,
+      "confirmed_value": null,
+      "effective_value": null,
+      "field_status": "not_found",
+      "readability": null,
+      "source": null,
+      "edited": false
+    },
+    {
+      "key": "patient.address",
+      "label": "Patient address",
+      "ocr_value": "\"STREET ADDRESS\" = \"12 Birch Walk\"",
+      "suggested_value": "12 Birch Walk, Trenton, NJ 08608",
+      "confirmed_value": null,
+      "effective_value": "12 Birch Walk, Trenton, NJ 08608",
+      "field_status": "normalized",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv007",
+          "p1-kv009",
+          "p1-kv008",
+          "p1-kv010"
+        ],
+        "bbox": {
+          "left": 0.0736,
+          "top": 0.2716,
+          "width": 0.0991,
+          "height": 0.0103
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "patient.identifiers",
+      "label": "Patient identifiers",
+      "ocr_value": null,
+      "suggested_value": null,
+      "confirmed_value": null,
+      "effective_value": null,
+      "field_status": "not_found",
+      "readability": null,
+      "source": null,
+      "edited": false
+    },
+    {
+      "key": "referring_clinician.name",
+      "label": "Referring clinician",
+      "ocr_value": "\"REFERRING CLINICIAN *\" = \"Dana Kim, MD\"",
+      "suggested_value": "Dana Kim, MD",
+      "confirmed_value": null,
+      "effective_value": "Dana Kim, MD",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv021"
+        ],
+        "bbox": {
+          "left": 0.0736,
+          "top": 0.7011,
+          "width": 0.102,
+          "height": 0.0116
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referring_clinician.organization",
+      "label": "Referring organization",
+      "ocr_value": "\"PRACTICE / CLINIC *\" = \"Maple Gate Primary Care\"",
+      "suggested_value": "Maple Gate Primary Care",
+      "confirmed_value": null,
+      "effective_value": "Maple Gate Primary Care",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv019"
+        ],
+        "bbox": {
+          "left": 0.379,
+          "top": 0.7011,
+          "width": 0.176,
+          "height": 0.0124
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referring_clinician.phone",
+      "label": "Referring clinician phone",
+      "ocr_value": "\"PRACTICE PHONE *\" = \"202-555-0171\"",
+      "suggested_value": "202-555-0171",
+      "confirmed_value": null,
+      "effective_value": "202-555-0171",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv020"
+        ],
+        "bbox": {
+          "left": 0.6892,
+          "top": 0.7009,
+          "width": 0.1037,
+          "height": 0.0106
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referring_clinician.fax",
+      "label": "Referring clinician fax",
+      "ocr_value": "\"FAX (OPT)\" = \"202-555-0161\"",
+      "suggested_value": "202-555-0161",
+      "confirmed_value": null,
+      "effective_value": "202-555-0161",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv027"
+        ],
+        "bbox": {
+          "left": 0.0729,
+          "top": 0.8299,
+          "width": 0.104,
+          "height": 0.0103
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referring_clinician.npi",
+      "label": "Referring clinician NPI",
+      "ocr_value": null,
+      "suggested_value": null,
+      "confirmed_value": null,
+      "effective_value": null,
+      "field_status": "not_found",
+      "readability": null,
+      "source": null,
+      "edited": false
+    },
+    {
+      "key": "referral.referral_date",
+      "label": "Referral date",
+      "ocr_value": "\"DATE OF REFERRAL\" = \"10/28/2026\"",
+      "suggested_value": "2026-10-28",
+      "confirmed_value": null,
+      "effective_value": "2026-10-28",
+      "field_status": "normalized",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv002"
+        ],
+        "bbox": {
+          "left": 0.4216,
+          "top": 0.1046,
+          "width": 0.0899,
+          "height": 0.0108
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referral.reason",
+      "label": "Reason for referral",
+      "ocr_value": "Intermittent palpitations over four months; requests specialist consultation.",
+      "suggested_value": "Intermittent palpitations over four months; requests specialist consultation.",
+      "confirmed_value": null,
+      "effective_value": "Intermittent palpitations over four months; requests specialist consultation.",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-l039"
+        ],
+        "bbox": {
+          "left": 0.0741,
+          "top": 0.4921,
+          "width": 0.5112,
+          "height": 0.0117
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referral.sender_priority",
+      "label": "Sender priority",
+      "ocr_value": "\"PRIORITY *\" = \"Routine\"",
+      "suggested_value": "routine",
+      "confirmed_value": null,
+      "effective_value": "routine",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv014"
+        ],
+        "bbox": {
+          "left": 0.0737,
+          "top": 0.436,
+          "width": 0.054,
+          "height": 0.0102
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referral.requested_specialty",
+      "label": "Requested specialty",
+      "ocr_value": "\"REQUESTED SPECIALTY *\" = \"Cardiology\"",
+      "suggested_value": "Cardiology",
+      "confirmed_value": null,
+      "effective_value": "Cardiology",
+      "field_status": "explicit",
+      "readability": null,
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv015"
+        ],
+        "bbox": {
+          "left": 0.3052,
+          "top": 0.4358,
+          "width": 0.0757,
+          "height": 0.0125
+        }
+      },
+      "edited": false
+    },
+    {
+      "key": "referral.diagnosis_codes",
+      "label": "Diagnosis codes",
+      "ocr_value": "\"DIAGNOSIS / ICD-10 *\" = \"R00.2 - Palpitations\"",
+      "suggested_value": "R00.2 Palpitations",
+      "confirmed_value": null,
+      "effective_value": "R00.2 Palpitations",
+      "field_status": "explicit",
+      "readability": "verify",
+      "source": {
+        "page": 1,
+        "element_ids": [
+          "p1-kv016"
+        ],
+        "bbox": {
+          "left": 0.6357,
+          "top": 0.436,
+          "width": 0.1368,
+          "height": 0.012
+        }
+      },
+      "edited": false
+    }
+  ],
+  "flags": [
+    {
+      "id": "43d6314f-9c69-4be8-8176-5baf5a355479",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": null,
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "86a3c106-4f88-46ef-8014-389149f9fb4f",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "patient.address",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "2298b7a4-a58d-4854-950e-664b9233d46f",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "patient.phone",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "9807bd14-2b45-46a1-927b-05fa6550021b",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referral.diagnosis_codes",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "8d281e6b-f836-4bf4-bef2-400e7e82dc7a",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referral.referral_date",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "751f6170-1794-4bf6-8387-13b9e8457e78",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referral.requested_specialty",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "5d7c3cf4-d3a6-434a-b74c-bca864433d15",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referral.sender_priority",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "b4b1ac7e-e73b-4df4-ae8d-5b13d9a38ed7",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referring_clinician.fax",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "796b47cf-75f5-4ecc-aeae-d37ad961db8c",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referring_clinician.name",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "9c86420c-ad7d-4a62-a9b2-b873c289b960",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referring_clinician.organization",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "45844af0-5722-426b-9573-841eaaba4024",
+      "code": "evidence_unverified",
+      "severity": "warning",
+      "field_key": "referring_clinician.phone",
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "7cd8cb0a-fe3d-4a45-a364-74c821db4347",
+      "code": "LOW_CONFIDENCE_FIELD",
+      "severity": "warning",
+      "field_key": "referral.diagnosis_codes",
+      "message": "Verify this value against the document.",
+      "status": "open",
+      "acknowledgement_reason": null
+    },
+    {
+      "id": "33643c5f-a061-42b7-b2c4-86ed9cef7233",
+      "code": "suggestion_unsupported",
+      "severity": "warning",
+      "field_key": null,
+      "message": "Review this suggestion against the document.",
+      "status": "resolved",
+      "acknowledgement_reason": null
+    }
+  ],
+  "specialty": {
+    "label": "cardiology",
+    "display_name": "Cardiology",
+    "rationale": "The referral requests cardiology for intermittent palpitations.",
+    "candidates": []
+  },
+  "specialty_decision": null,
+  "destination_specialty": null,
+  "current_run": {
+    "id": "5c9c044d-9619-4d84-a033-74847452a45e",
+    "attempt": 1,
+    "state": "succeeded",
+    "error_code": null,
+    "retryable": null
+  },
+  "history": [
+    {
+      "action": "uploaded",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": "uploaded",
+      "at": "2026-11-11T21:45:44.165158-05:00",
+      "reason": null
+    },
+    {
+      "action": "processing_started",
+      "actor": "system",
+      "from_status": "uploaded",
+      "to_status": "processing",
+      "at": "2026-11-11T21:45:44.706008-05:00",
+      "reason": null
+    },
+    {
+      "action": "document_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:45:46.452402-05:00",
+      "reason": null
+    },
+    {
+      "action": "referral_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:45:46.499502-05:00",
+      "reason": null
+    },
+    {
+      "action": "ready_for_review",
+      "actor": "system",
+      "from_status": "processing",
+      "to_status": "needs_review",
+      "at": "2026-11-11T21:45:52.033445-05:00",
+      "reason": null
+    },
+    {
+      "action": "referral_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:47:19.979501-05:00",
+      "reason": null
+    },
+    {
+      "action": "document_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:47:19.984073-05:00",
+      "reason": null
+    },
+    {
+      "action": "referral_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:53:07.598834-05:00",
+      "reason": null
+    },
+    {
+      "action": "document_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:53:07.598867-05:00",
+      "reason": null
+    },
+    {
+      "action": "document_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:56:04.105652-05:00",
+      "reason": null
+    },
+    {
+      "action": "referral_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T21:56:04.105770-05:00",
+      "reason": null
+    },
+    {
+      "action": "document_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T22:03:24.232410-05:00",
+      "reason": null
+    },
+    {
+      "action": "referral_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T22:03:24.232496-05:00",
+      "reason": null
+    },
+    {
+      "action": "document_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T22:03:54.198628-05:00",
+      "reason": null
+    },
+    {
+      "action": "referral_viewed",
+      "actor": "staff",
+      "from_status": null,
+      "to_status": null,
+      "at": "2026-11-11T22:03:54.213902-05:00",
+      "reason": null
+    },
+    {
+      "action": "ready_for_review",
+      "actor": "system",
+      "from_status": "needs_review",
+      "to_status": "needs_review",
+      "at": "2026-11-11T22:15:56.144728-05:00",
+      "reason": "Revalidated saved extraction after correcting OCR form evidence formatting; no model rerun or staff decision."
+    }
+  ]
+}

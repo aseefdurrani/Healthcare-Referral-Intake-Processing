@@ -218,7 +218,7 @@ select:focus-visible,
 
 .review-split {
   display: grid;
-  grid-template-columns: minmax(0, 45%) minmax(0, 55%);
+  grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
   min-height: 0;
 }
 
@@ -256,4 +256,8 @@ select:focus-visible,
   .animate-pulse {
     animation: none;
   }
+}
+
+@media (min-width: 1024px) {
+  .document-column { position: sticky; top: 1rem; }
 }

@@ -127,6 +127,12 @@ _CATALOG: dict[str, tuple[int, str, str, dict[str, str] | None]] = {
         "The document service could not complete the request.",
         None,
     ),
+    "AWS_SESSION_EXPIRED": (
+        503,
+        "Document service session expired",
+        "The local document service needs to be reconnected.",
+        None,
+    ),
 }
 
 

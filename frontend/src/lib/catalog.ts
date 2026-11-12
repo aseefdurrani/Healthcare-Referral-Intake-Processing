@@ -243,10 +243,13 @@ export function flagRank(code: string): number {
 }
 
 export function flagKind(code: string): string {
+  const normalized = code.toLowerCase();
+  if (normalized.includes("evidence") || normalized.includes("source") || normalized.includes("unsupported") || normalized.includes("unverified")) return "Source verification";
+  if (normalized.includes("confidence")) return "OCR confidence";
   if (code.includes("MISSING") || code.includes("INVALID_DATE")) return "Missing";
   if (code.includes("CONFLICT")) return "Conflict";
   if (code.includes("AMBIG")) return "Ambiguous";
-  return "Rule";
+  return "Review check";
 }
 
 export function defaultDestination(detail: ReferralDetail): string {

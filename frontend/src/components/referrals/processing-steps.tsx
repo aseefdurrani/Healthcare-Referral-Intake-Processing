@@ -1,3 +1,4 @@
+import { Check, Circle, CircleAlert, Clock3 } from "lucide-react";
 import type { ProcessingStep, ReferralStatus } from "@/lib/api/types";
 
 const STEPS = [
@@ -50,15 +51,15 @@ export function ProcessingSteps({
 }) {
   const items = stateFor(status, step, failedStep);
   return (
-    <ol className="flex flex-wrap gap-3 text-sm" aria-label="Processing progress">
+    <ol className="flex flex-wrap gap-2 rounded-panel border border-border bg-surface p-3 text-sm" aria-label="Processing progress">
       {items.map((item) => (
-        <li key={item.id} className="flex items-center gap-2">
-          <span aria-hidden="true">
-            {item.state === "done" ? "[x]" : item.state === "current" ? "[~]" : item.state === "failed" ? "[!]" : "[ ]"}
+        <li key={item.id} aria-current={item.state === "current" ? "step" : undefined} className="flex items-center gap-2 rounded-control px-2 py-1">
+          <span aria-hidden="true" className={`flex size-7 items-center justify-center rounded-full ${item.state === "done" ? "bg-approved text-white" : item.state === "current" ? "bg-primary text-white" : item.state === "failed" ? "bg-danger text-white" : "bg-surface-subtle text-text-muted"}`}>
+            {item.state === "done" ? <Check className="size-4" /> : item.state === "current" ? <Clock3 className="size-4" /> : item.state === "failed" ? <CircleAlert className="size-4" /> : <Circle className="size-3" />}
           </span>
           <span>
             {item.label}
-            {item.state === "current" ? " in progress" : item.state === "failed" ? " did not finish" : item.state === "waiting" ? "" : " complete"}
+            <span className="sr-only">{item.state === "current" ? " in progress" : item.state === "failed" ? " did not finish" : item.state === "waiting" ? " pending" : " complete"}</span>
           </span>
         </li>
       ))}

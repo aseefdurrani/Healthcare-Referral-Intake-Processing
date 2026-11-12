@@ -16,6 +16,7 @@ if (process.env.NEXT_PUBLIC_APP_ENV === "aws-demo") {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   poweredByHeader: false,
   turbopack: {
     rules: {

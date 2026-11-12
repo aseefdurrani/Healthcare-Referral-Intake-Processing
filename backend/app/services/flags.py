@@ -6,7 +6,7 @@ from datetime import date
 from typing import Any
 
 from app.services.grounding import ground
-from app.services.taxonomy import KNOWN_FIELDS
+from app.services.taxonomy import KNOWN_FIELDS, field_label
 from app.services.validation import FieldView, FlagDraft, evaluate_rules
 
 _DOCUMENT_FLAGS = {
@@ -52,9 +52,17 @@ def _grounding_flags(warnings: list[dict[str, str]]) -> list[FlagDraft]:
                 FlagDraft(code, "warning", None, "A document flag and its issue do not agree.")
             )
         else:
-            drafts.append(
-                FlagDraft(code, "warning", key, "Review this suggestion against the document.")
-            )
+            label = field_label(key) if key else "Specialty suggestion"
+            explanation = {
+                "evidence_unverified": "The cited quote could not be matched to its OCR source.",
+                "value_unverified": "The value could not be verified from its cited quote.",
+                "suggestion_unsupported": "The suggestion does not have verified source evidence.",
+                "format_invalid": "The extracted value has an unexpected format.",
+                "status_value_mismatch": "The value and its extraction status do not agree.",
+                "candidates_invalid": "The specialty choices need review.",
+                "too_long": "The extraction exceeds the expected length.",
+            }.get(code, "Review this suggestion against the document.")
+            drafts.append(FlagDraft(code, "warning", key, f"{label}: {explanation}"))
     return drafts
 
 

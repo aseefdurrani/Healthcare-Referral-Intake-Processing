@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { ReferenceId } from "@/components/referrals/reference-id";
 import { StatusChip } from "@/components/referrals/status-chip";
 import { ApiProblem, classifyProblem } from "@/lib/api/problems";
 import { useReferral, useReferralDocument, useReferralMutations, useReferralStatus } from "@/lib/api/queries";
-import { emptyDraft, flagKind, flagRank, specialtyLabel, type ApprovalDraft } from "@/lib/catalog";
+import { emptyDraft, flagKind, flagRank, FIELD_CATALOG, specialtyLabel, type ApprovalDraft } from "@/lib/catalog";
 import { formatClock, formatElapsed, formatReceived, historySummary } from "@/lib/format";
 import type { Priority, ReasonCode } from "@/lib/api/types";
 
@@ -30,10 +30,11 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
   const documentQuery = useReferralDocument(referralId);
   const mutations = useReferralMutations(referralId);
   const queryClient = useQueryClient();
-  const previousStatus = useRef<string | undefined>(undefined);
   const detail = detailQuery.data;
   const polled = statusQuery.data?.status;
-  const status = polled === "uploaded" || polled === "processing" ? polled : (detail?.status ?? polled);
+  const status = statusQuery.data && (!detail || statusQuery.data.version >= detail.version)
+    ? polled
+    : detail?.status;
   const [highlight, setHighlight] = useState<HighlightTarget | null>(null);
   const [showDocument, setShowDocument] = useState(true);
   const [approveOpen, setApproveOpen] = useState(false);
@@ -43,7 +44,7 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
   const [conflict, setConflict] = useState(false);
   const [startedAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
-  if (detail && !draft) {
+  if (detail && detail.status !== "uploaded" && detail.status !== "processing" && !draft) {
     setDraft(emptyDraft(detail));
   }
 
@@ -58,15 +59,15 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
   }, [status]);
 
   useEffect(() => {
-    const prior = previousStatus.current;
-    previousStatus.current = status;
-    if (!status || !prior) return;
-    if ((prior === "uploaded" || prior === "processing") && status !== "uploaded" && status !== "processing") {
-      void queryClient.invalidateQueries({ queryKey: ["referral", referralId] });
+    const snapshot = statusQuery.data;
+    if (!snapshot || !detail) return;
+    if (snapshot.version > detail.version || (snapshot.version === detail.version && snapshot.status !== detail.status)) {
+      void queryClient.invalidateQueries({ queryKey: ["referral", referralId], exact: true });
+      void queryClient.invalidateQueries({ queryKey: ["referrals"] });
     }
-  }, [status, queryClient, referralId]);
+  }, [statusQuery.data, detail, queryClient, referralId]);
 
-  if (detailQuery.isLoading || !status) {
+  if (detailQuery.isLoading) {
     return (
       <div className="space-y-3" aria-hidden="true">
         <Skeleton className="h-8 w-80" />
@@ -117,7 +118,7 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
   }
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-4">
       <div className="space-y-2">
         <Link href="/referrals" className="cursor-pointer text-sm font-medium text-primary underline-offset-2 hover:underline">
           Referrals
@@ -127,13 +128,13 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
           <span className="font-mono text-sm" title={detail.id}>
             {detail.id.slice(0, 8)}
           </span>
-          <StatusChip status={status} step={step} />
+          <StatusChip status={status ?? detail.status} step={step} />
         </div>
         <p className="text-sm text-text-muted">
           {detail.document.display_filename} · uploaded {received.label}
         </p>
         <p className="large-screen-note text-sm text-text-muted">This app works best on a larger screen.</p>
-        <ProcessingSteps status={status} step={step} failedStep={failure?.step ?? null} />
+        <ProcessingSteps status={status ?? detail.status} step={step} failedStep={failure?.step ?? null} />
       </div>
       {conflict ? (
         <div role="alert" className="rounded-panel border border-border bg-surface p-4">
@@ -151,12 +152,13 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
         </div>
       ) : null}
       <div className="review-split gap-6">
-        <div>
+        <div className="document-column min-w-0 self-start">
           <Button type="button" variant="outline" className="doc-toggle mb-3" onClick={() => setShowDocument((value) => !value)}>
             {showDocument ? "Hide document" : "Show document"}
           </Button>
           {showDocument && documentQuery.data ? (
             <DocumentViewer
+              key={detail.document.id}
               blob={documentQuery.data.blob}
               mediaType={documentQuery.data.mediaType || detail.document.content_type}
               pageCount={detail.document.page_count}
@@ -164,8 +166,22 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
             />
           ) : null}
           {documentQuery.isLoading ? <Skeleton className="h-80 w-full" /> : null}
+          {documentQuery.error ? (
+            <div role="alert" className="rounded-panel border border-border bg-surface p-4">
+              <p>{documentQuery.error instanceof ApiProblem && documentQuery.error.code === "AWS_SESSION_EXPIRED"
+                ? "The local document service session expired. Reconnect AWS, then retry the document."
+                : "The document could not be loaded."}</p>
+              <Button variant="outline" onClick={() => void documentQuery.refetch()}>Retry document</Button>
+            </div>
+          ) : null}
         </div>
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
+          {statusQuery.error ? (
+            <div role="alert" className="rounded-panel border border-border bg-surface p-4">
+              <p>Status updates are unavailable. Your document is saved.</p>
+              <Button variant="outline" onClick={() => void statusQuery.refetch()}>Retry status</Button>
+            </div>
+          ) : null}
           {status === "uploaded" || status === "processing" ? (
             <section aria-live="polite">
               <h2 className="text-base font-semibold">{step === "reading_text" || status === "uploaded" ? "Reading the document" : step === "validating" ? "Checking fields" : "Structuring fields"}</h2>
@@ -238,15 +254,17 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
                 {openFlags.length === 0
                   ? "Nothing else is flagged"
                   : openFlags.length === 1
-                    ? "1 thing needs your attention"
-                    : `${openFlags.length} things need your attention`}
+                    ? "1 review item needs your attention"
+                    : `${openFlags.length} review items need your attention`}
               </h2>
-              <ul className="mt-2 space-y-2">
+              <p className="mt-1 text-sm text-text-muted">Warnings below explain what to verify. Optional fields marked “Not found” do not automatically require action.</p>
+              <ul className="mt-3 divide-y divide-border overflow-hidden rounded-panel border border-border bg-surface">
                 {openFlags.map((flag) => (
-                  <li key={flag.id} className="flex items-start justify-between gap-3 text-sm">
+                  <li key={flag.id} className="flex items-start justify-between gap-3 p-3 text-sm">
                     <span>
-                      <span aria-hidden="true">! </span>
-                      {flagKind(flag.code)} {flag.message}
+                      <span className="block font-medium">{flag.field_key ? (FIELD_CATALOG.find((field) => field.key === flag.field_key)?.label ?? flag.field_key) : "Document / specialty"}</span>
+                      <span className="mt-1 block text-text-muted">{flag.message}</span>
+                      <span className="mt-1 block text-xs text-attention">{flagKind(flag.code)}</span>
                     </span>
                     {flag.field_key ? (
                       <Button
@@ -254,7 +272,7 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
                         variant="outline"
                         onClick={() => document.getElementById(`field-${flag.field_key}`)?.scrollIntoView({ block: "center" })}
                       >
-                        Edit
+                        View field
                       </Button>
                     ) : null}
                   </li>
@@ -266,9 +284,10 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
           {status === "needs_review" || status === "approved" || status === "rejected" ? (
             <FieldGroups
               fields={detail.fields}
+              flags={openFlags}
               readOnly={readOnly}
               saving={mutations.edit.isPending}
-              onJump={(target) => setHighlight(target)}
+              onJump={(target) => { setShowDocument(true); setHighlight(target); }}
               onSave={(key, value) => {
                 mutations.edit.mutate(
                   { version: detail.version, fields: [{ key, value }] },
@@ -292,7 +311,7 @@ export function ReferralWorkspace({ referralId }: { referralId: string }) {
         </div>
       </div>
       {status === "needs_review" || (status === "failed" && detail.allowed_actions.includes("reject")) ? (
-        <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-2 border-t border-border bg-surface px-6 py-3">
+        <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex items-center justify-end gap-2 border-t border-border bg-surface px-6 py-3">
           <Button type="button" variant="outline" onClick={() => setRejectOpen(true)} disabled={!detail.allowed_actions.includes("reject")}>
             Reject
           </Button>

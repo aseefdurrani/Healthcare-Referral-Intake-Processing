@@ -48,6 +48,8 @@ export function useReferralStatus(id: string) {
   return useQuery({
     queryKey: ["referral", id, "status"],
     queryFn: () => getReferralStatus(id),
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
     refetchInterval: (query) => statusPollInterval(query.state.data?.status),
   });
 }
@@ -56,6 +58,7 @@ export function useReferralDocument(id: string) {
   return useQuery({
     queryKey: ["referral", id, "document"],
     queryFn: () => getDocument(id),
+    gcTime: 0,
     staleTime: Number.POSITIVE_INFINITY,
     refetchOnWindowFocus: false,
     retry: false,

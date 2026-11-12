@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 
 import { Button } from "@/components/ui/button";
@@ -34,12 +34,27 @@ export function DocumentViewer({
     setAppliedHighlight(highlightKey);
     setPage(highlight.page);
   }
-  const url = useMemo(() => URL.createObjectURL(blob), [blob]);
-  useEffect(() => {
-    return () => URL.revokeObjectURL(url);
-  }, [url]);
-  const pages = Math.max(pageCount ?? 1, 1);
   const image = mediaType.startsWith("image/");
+  const imageRef = useRef<HTMLImageElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [pageWidth, setPageWidth] = useState(612);
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setPageWidth(Math.max(1, Math.floor(entry.contentRect.width)));
+    });
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, []);
+  const [loadedPages, setLoadedPages] = useState<number | null>(null);
+  useEffect(() => {
+    if (!image) return;
+    const objectUrl = URL.createObjectURL(blob);
+    if (imageRef.current) imageRef.current.src = objectUrl;
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [blob, image]);
+  const pages = Math.max(loadedPages ?? pageCount ?? 1, 1);
 
   return (
     <section className="flex min-h-0 flex-col gap-3" aria-label="Document">
@@ -59,7 +74,7 @@ export function DocumentViewer({
           </>
         )}
         <Button type="button" variant="outline" onClick={() => setScale(1)}>
-          100%
+          Fit width
         </Button>
         <Button type="button" variant="outline" onClick={() => setScale((value) => Math.max(0.5, value - 0.25))} aria-label="Zoom out">
           −
@@ -75,16 +90,26 @@ export function DocumentViewer({
         </p>
       ) : null}
       {failed ? <p>This document could not be displayed.</p> : null}
-      <div className="overflow-auto rounded-panel border border-border bg-surface p-3">
+      <div ref={viewportRef} className="max-h-[calc(100dvh-15rem)] min-h-64 overflow-auto rounded-panel border border-border bg-surface p-3">
         {image ? (
           <div className="relative inline-block" style={{ width: `${scale * 100}%` }}>
-            <img src={url} alt="Referral document" className="block h-auto w-full" onError={() => setFailed(true)} />
+            <img ref={imageRef} alt="Referral document" className="block h-auto w-full" onError={() => setFailed(true)} />
             {highlight ? <HighlightBox bbox={highlight.bbox} /> : null}
           </div>
         ) : (
-          <Document file={url} onLoadError={() => setFailed(true)} loading={<p>Loading document</p>}>
+          <Document
+            // Keep the fetched Blob stable and use effect-based loading. Suspense
+            // retries must never create a new URL or PDF input during render.
+            file={blob}
+            suspense={false}
+            onLoadSuccess={({ numPages }) => setLoadedPages(numPages)}
+            onLoadError={() => setFailed(true)}
+            onSourceError={() => setFailed(true)}
+            error={<p role="alert">This PDF could not be displayed. Reload the document to try again.</p>}
+            loading={<p role="status">Loading document</p>}
+          >
             <div className="relative inline-block">
-              <Page pageNumber={page} scale={scale} renderTextLayer={false} renderAnnotationLayer={false} />
+              <Page width={pageWidth} suspense={false} devicePixelRatio={Math.min(globalThis.devicePixelRatio || 1, 2)} pageNumber={page} scale={scale} renderTextLayer={false} renderAnnotationLayer={false} />
               {highlight && highlight.page === page ? <HighlightBox bbox={highlight.bbox} /> : null}
             </div>
           </Document>

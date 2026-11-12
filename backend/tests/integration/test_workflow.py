@@ -258,6 +258,22 @@ def test_storage_failure_stays_in_the_inbox(
     _purge(database)
 
 
+def test_expired_storage_session_returns_actionable_document_error(
+    workflow: tuple[TestClient, MemoryStorage, ScriptedTextract, ScriptedModel],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, storage, _textract, _model = workflow
+    created = _upload(client, pdf_bytes(1), "session.pdf")
+    referral_id = created.json()["id"]
+
+    def expired(_key: str) -> bytes:
+        raise StorageError("aws_session_expired")
+
+    monkeypatch.setattr(storage, "get_bytes", expired)
+    response = client.get(f"/api/v1/referrals/{referral_id}/document")
+    assert_problem(response, 503, "AWS_SESSION_EXPIRED")
+
+
 def test_resume_does_not_start_twice(
     workflow: tuple[TestClient, MemoryStorage, ScriptedTextract, ScriptedModel],
 ) -> None:

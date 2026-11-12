@@ -1,4 +1,4 @@
-"""Pure OCR normalization and the Bedrock transcript. Identical input renders identical text."""
+"""Pure OCR normalization and the model transcript. Identical input renders identical text."""
 
 from __future__ import annotations
 
@@ -437,6 +437,16 @@ def _marker(line: dict[str, object]) -> str:
     return marker
 
 
+def _form_text(item: dict[str, Any]) -> str:
+    value = _clean(str(item.get("value_text", "")))
+    shown = '"" (empty)' if value == "" else f'"{value}"'
+    return f'"{_clean(str(item.get("key_text", "")))}" = {shown}'
+
+
+def _checkbox_text(item: dict[str, Any]) -> str:
+    return f'"{_clean(str(item.get("label_text", "")))}" = {item.get("status")}'
+
+
 def render_for_llm(document: dict[str, Any]) -> str:
     pages = document.get("pages") or []
     run_id = document.get("ocr_run_id")
@@ -450,15 +460,12 @@ def render_for_llm(document: dict[str, Any]) -> str:
         if key_values:
             lines.append(f"--- FORM FIELDS (page {page['page']}) ---")
             for item in key_values:
-                value = _clean(str(item.get("value_text", "")))
-                shown = '"" (empty)' if value == "" else f'"{value}"'
-                lines.append(f'[{item["id"]}] "{_clean(str(item.get("key_text", "")))}" = {shown}')
+                lines.append(f'[{item["id"]}] {_form_text(item)}')
         boxes = page.get("checkboxes") or []
         if boxes:
             lines.append(f"--- CHECKBOXES (page {page['page']}) ---")
             for box in boxes:
-                label = _clean(str(box.get("label_text", "")))
-                lines.append(f'[{box["id"]}] "{label}" = {box.get("status")}')
+                lines.append(f'[{box["id"]}] {_checkbox_text(box)}')
         for table in page.get("tables") or []:
             lines.append(f"--- TABLE {table['id']} (page {page['page']}) ---")
             lines.extend(_table_lines(table))
@@ -492,7 +499,7 @@ def element_index(document: dict[str, Any]) -> dict[str, dict[str, object]]:
         page_number = int(page["page"])
         for line in page.get("lines") or []:
             index[str(line["id"])] = {
-                "text": str(line.get("text", "")),
+                "text": _clean(str(line.get("text", ""))),
                 "page": page_number,
                 "bbox": line.get("bbox"),
                 "confidence": line.get("min_word_confidence"),
@@ -500,7 +507,7 @@ def element_index(document: dict[str, Any]) -> dict[str, dict[str, object]]:
             }
         for item in page.get("key_values") or []:
             index[str(item["id"])] = {
-                "text": f"{item.get('key_text', '')}: {item.get('value_text', '')}",
+                "text": _form_text(item),
                 "page": page_number,
                 "bbox": item.get("value_bbox"),
                 "confidence": item.get("value_min_word_confidence"),
@@ -508,7 +515,7 @@ def element_index(document: dict[str, Any]) -> dict[str, dict[str, object]]:
             }
         for box in page.get("checkboxes") or []:
             index[str(box["id"])] = {
-                "text": str(box.get("label_text", "")),
+                "text": _checkbox_text(box),
                 "page": page_number,
                 "bbox": box.get("bbox"),
                 "confidence": box.get("confidence"),

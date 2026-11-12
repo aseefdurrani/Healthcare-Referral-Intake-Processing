@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.adapters.storage import ObjectMissing, StorageError
+from app.adapters.storage import StorageError
 from app.core.config import Settings
 from app.core.errors import problem
 from app.core.logging import log_event
@@ -159,7 +159,9 @@ def read_document(
         raise problem("DEPENDENCY_UNAVAILABLE")
     try:
         body = storage.get_bytes(document.s3_key)
-    except (StorageError, ObjectMissing) as exc:
+    except StorageError as exc:
+        if exc.code == "aws_session_expired":
+            raise problem("AWS_SESSION_EXPIRED") from exc
         raise problem("DEPENDENCY_UNAVAILABLE") from exc
     event = add_audit(
         session,

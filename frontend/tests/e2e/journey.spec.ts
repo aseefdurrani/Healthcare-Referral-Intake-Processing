@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
@@ -86,7 +87,7 @@ function detail(id: string, status: string, name: string | null, version = 2) {
   };
 }
 
-async function installApi(page: Page) {
+async function installApi(page: Page, options: { processing?: boolean; pdf?: boolean } = {}) {
   let reviews: ReturnType<typeof detail> = detail(REVIEW_ID, "needs_review", PATIENT);
   let polls = 0;
   await page.route("**/api/backend/**", async (route: Route) => {
@@ -125,7 +126,7 @@ async function installApi(page: Page) {
       ];
       const current = sequence[Math.min(polls - 1, sequence.length - 1)]!;
       await route.fulfill({
-        json: { id: REVIEW_ID, version: reviews.version, failure: null, ...current },
+        json: { id: REVIEW_ID, version: polls >= 4 ? reviews.version : 1, failure: null, ...current, ...(reviews.status === "approved" ? { status: "approved" } : {}) },
       });
       return;
     }
@@ -147,7 +148,7 @@ async function installApi(page: Page) {
       return;
     }
     if (path === `/referrals/${REVIEW_ID}` && request.method() === "GET") {
-      await route.fulfill({ json: reviews });
+      await route.fulfill({ json: options.processing && polls < 4 ? { ...detail(REVIEW_ID, "processing", null, 1), fields: [], flags: [], specialty: null } : reviews });
       return;
     }
     if (path === `/referrals/${FAILED_ID}` && request.method() === "GET") {
@@ -157,8 +158,8 @@ async function installApi(page: Page) {
     if (path === `/referrals/${REVIEW_ID}/document` || path === `/referrals/${FAILED_ID}/document`) {
       await route.fulfill({
         status: 200,
-        contentType: "image/png",
-        body: Buffer.from(
+        contentType: options.pdf ? "application/pdf" : "image/png",
+        body: options.pdf ? readFileSync("tests/fixtures/referral.pdf") : Buffer.from(
           "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
           "base64",
         ),
@@ -281,3 +282,81 @@ async function signInPage(page: Page) {
   await page.goto("/sign-in?next=%2Freferrals");
   await page.getByRole("link", { name: "Continue to secure sign-in" }).click();
 }
+
+
+test("processing completes without refresh and the real PDF survives reload and focus", async ({ page, context }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await installApi(page, { processing: true, pdf: true });
+  await signIn(page);
+  await page.getByRole("link", { name: REVIEW_ID.slice(0, 8) }).click();
+  await expect(page.getByRole("heading", { name: "Reading the document" })).toBeVisible();
+  await expect(page.locator(".react-pdf__Page canvas")).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByRole("heading", { name: `Referral for ${PATIENT}` })).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText("Elapsed", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("page 1 of 2", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Next page" }).click();
+  await expect(page.locator('.react-pdf__Page[data-page-number="2"] canvas')).toBeVisible();
+  const other = await context.newPage();
+  await other.goto("about:blank");
+  await page.bringToFront();
+  await other.close();
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`/referrals/${REVIEW_ID}$`));
+  await expect(page.locator(".react-pdf__Page canvas")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("heading", { name: "Referral", exact: true }).scrollIntoViewIfNeeded();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  await page.getByText("History", { exact: true }).scrollIntoViewIfNeeded();
+  const footer = page.locator(".sticky.bottom-0");
+  await expect(footer).toBeVisible();
+  await page.screenshot({ path: "test-results/referral-review.png", fullPage: true });
+  expect(errors).toEqual([]);
+});
+
+test("expired document service session offers recovery", async ({ page }) => {
+  await installApi(page);
+  let attempts = 0;
+  await page.route(`**/referrals/${REVIEW_ID}/document`, (route) => {
+    attempts += 1;
+    return attempts === 1
+      ? route.fulfill({ status: 503, json: { code: "AWS_SESSION_EXPIRED", detail: "The local document service needs to be reconnected." } })
+      : route.fulfill({ contentType: "application/pdf", body: readFileSync("tests/fixtures/referral.pdf") });
+  });
+  await signIn(page);
+  await page.getByRole("link", { name: REVIEW_ID.slice(0, 8) }).click();
+  await expect(page.getByText("The local document service session expired. Reconnect AWS, then retry the document.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry document" })).toBeVisible();
+  await page.getByRole("button", { name: "Retry document" }).click();
+  await expect(page.locator(".react-pdf__Page canvas")).toBeVisible({ timeout: 20_000 });
+});
+
+test("saved synthetic referral shows one matching warning and a contained document", async ({ page }) => {
+  const saved = JSON.parse(readFileSync("tests/fixtures/referral-detail.json", "utf8"));
+  await installApi(page);
+  await page.route(`**/api/backend/referrals/${saved.id}**`, async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/document")) {
+      await route.fulfill({ contentType: "application/pdf", body: readFileSync("tests/fixtures/referral.pdf") });
+    } else if (path.endsWith("/status")) {
+      await route.fulfill({ json: { id: saved.id, status: saved.status, version: saved.version, processing_step: null, failure: null } });
+    } else {
+      await route.fulfill({ json: saved });
+    }
+  });
+  await signIn(page);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/referrals/${saved.id}`);
+  await expect(page.locator(".react-pdf__Page canvas")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "1 review item needs your attention" })).toBeVisible();
+  await expect(page.getByText("12 resolved or acknowledged", { exact: true })).toBeVisible();
+  await page.screenshot({ path: "test-results/audited-referral.png" });
+  await page.getByRole("button", { name: "View field" }).click();
+  await expect(page.locator('[id="field-referral.diagnosis_codes"]')).toBeInViewport();
+  await page.locator('[id="field-referral.diagnosis_codes"]').getByRole("button", { name: "p.1" }).click();
+  await expect(page.getByTestId("highlight-box")).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  expect(await page.locator(".sticky.bottom-0").evaluate((el) => Math.abs(innerHeight - el.getBoundingClientRect().bottom))).toBeLessThanOrEqual(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: "test-results/audited-referral-bottom.png" });
+});

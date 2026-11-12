@@ -8,7 +8,9 @@ import json
 from datetime import UTC, datetime, timedelta
 
 import boto3
+import pytest
 from botocore.config import Config
+from botocore.exceptions import LoginRefreshRequired
 from botocore.stub import Stubber
 from tests.conftest import build_settings
 from tests.samples import sample_extraction
@@ -16,7 +18,7 @@ from tests.samples import sample_extraction
 from app.adapters.aws import _config
 from app.adapters.llm import BotoLanguageModel
 from app.adapters.ocr import BotoTextract
-from app.adapters.storage import S3Storage
+from app.adapters.storage import S3Storage, StorageError
 from app.core.config import Settings
 from app.services.objects import write_once
 
@@ -33,6 +35,29 @@ def test_aws_clients_use_standard_retries() -> None:
     assert config.retries["mode"] == "standard"
     assert config.retries["total_max_attempts"] == 3
     assert config.connect_timeout == 5
+
+
+@pytest.mark.parametrize("operation", ["put_bytes", "head", "get_bytes"])
+def test_expired_login_becomes_storage_error(operation: str) -> None:
+    class ExpiredClient:
+        def put_object(self, **_kwargs: object) -> None:
+            raise LoginRefreshRequired()
+
+        def head_object(self, **_kwargs: object) -> None:
+            raise LoginRefreshRequired()
+
+        def get_object(self, **_kwargs: object) -> None:
+            raise LoginRefreshRequired()
+
+    storage = S3Storage(ExpiredClient(), BUCKET)
+    with pytest.raises(StorageError, match="aws_session_expired") as caught:
+        if operation == "put_bytes":
+            storage.put_bytes(KEY, b"%PDF-1.7", "application/pdf", b"0" * 32)
+        elif operation == "head":
+            storage.head(KEY)
+        else:
+            storage.get_bytes(KEY)
+    assert caught.value.code == "aws_session_expired"
 
 
 def test_put_uses_if_none_match_and_checksum_without_sse_headers() -> None:

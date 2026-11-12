@@ -6,7 +6,7 @@ import base64
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from botocore.exceptions import ClientError  # type: ignore[import-untyped]
+from botocore.exceptions import ClientError, LoginRefreshRequired  # type: ignore[import-untyped]
 
 from app.services.keys import OBJECT_KEY
 
@@ -114,6 +114,8 @@ class S3Storage:
             if name in {"PreconditionFailed", "412"} or status == 412:
                 raise ObjectExists from exc
             raise StorageError(_storage_code(name, status)) from exc
+        except LoginRefreshRequired as exc:
+            raise StorageError("aws_session_expired") from exc
         etag = response.get("ETag")
         return PutResult(
             etag=etag if isinstance(etag, str) else "", aws_request_id=_request_id(response)
@@ -132,6 +134,8 @@ class S3Storage:
             if name in {"NoSuchKey", "NotFound", "404"} or status == 404:
                 raise ObjectMissing from exc
             raise StorageError(_storage_code(name, status)) from exc
+        except LoginRefreshRequired as exc:
+            raise StorageError("aws_session_expired") from exc
         length = response.get("ContentLength")
         checksum = response.get("ChecksumSHA256")
         sse = response.get("ServerSideEncryption")
@@ -153,6 +157,8 @@ class S3Storage:
             if name in {"NoSuchKey", "NotFound", "404"} or status == 404:
                 raise ObjectMissing from exc
             raise StorageError(_storage_code(name, status)) from exc
+        except LoginRefreshRequired as exc:
+            raise StorageError("aws_session_expired") from exc
         body = response["Body"].read()
         return body if isinstance(body, bytes) else bytes(body)
 
